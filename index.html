@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הזמנה אישית</title>
+<meta name="theme-color" content="#050510">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   טוקנים ובסיס — שפת העיצוב שוכפלה מ-RRXO (index.css + tailwind.config.js)
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  min-height: 100dvh;
+  width: 100%;
+  font-family: 'Heebo', sans-serif;
+  background: #050510;
+  color: #F5F5F7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+::selection { background: rgba(232, 121, 249, 0.25); color: #fff; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(232, 121, 249, 0.3); border-radius: 999px; }
+
+:focus-visible {
+  outline: 2px solid rgba(236, 114, 249, 0.85);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  color: inherit;
+  background: none;
+  border: none;
+}
+
+a { color: inherit; }
+
+/* === רקע — bg-warm (זהה ל-RRXO) === */
+.bg-warm {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 40% 40%, rgba(168,85,247,0.18) 0%, transparent 70%),
+    radial-gradient(ellipse at 50% 50%, #1a0530 0%, #0d0520 45%, #08080f 100%);
+}
+
+/* === גרעין פילם עדין === */
+.film-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* === פרטיקלים צפים === */
+.particle-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(0.5px);
+  background: radial-gradient(circle, rgba(236,72,153,0.55) 0%, rgba(168,85,247,0.15) 70%, transparent 100%);
+  animation: particleFloat 7s ease-in-out infinite;
+}
+@keyframes particleFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.25; }
+  50% { transform: translateY(-22px) rotate(180deg); opacity: 0.6; }
+}
+
+/* === זכוכית === */
+.glass {
+  background: linear-gradient(145deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.01) 100%);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 22px;
+  box-shadow:
+    0 16px 40px -10px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.02);
+}
+
+/* === כפתור פעולה ראשי === */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  padding-block: 1rem;
+  padding-inline: 1.75rem;
+  border-radius: 18px;
+  font-size: 1.0625rem;
+  font-weight: 400;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(180,40,80,0.88), rgba(120,20,60,0.96));
+  box-shadow:
+    0 0 50px rgba(180,40,80,0.35),
+    0 8px 28px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.2);
+  border: 1px solid rgba(220,80,120,0.35);
+  transition: box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+@media (hover: hover) and (pointer: fine) {
+  .action-btn:hover {
+    box-shadow:
+      0 0 80px rgba(180,40,80,0.45),
+      0 14px 40px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.22),
+      inset 0 -1px 0 rgba(0,0,0,0.25);
+    transform: translateY(-3px) scale(1.015);
+  }
+}
+.action-btn:active {
+  transition: transform 0.1s ease;
+  transform: translateY(1px) scale(0.985);
+}
+
+/* === כפתור משני === */
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding-block: 0.7rem;
+  padding-inline: 1.25rem;
+  transition: background 0.5s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: translateY(-2px);
+  }
+}
+.secondary-btn:active { transform: translateY(0) scale(0.98); transition: transform 0.1s ease; }
+
+/* === אנימציית הופעה מהערפל === */
+.word-appear {
+  animation: wordAppear 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+  will-change: opacity, transform, filter;
+}
+@keyframes wordAppear {
+  0%   { opacity: 0; filter: blur(8px); transform: translateY(10px) scale(0.985); }
+  60%  { opacity: 0.85; filter: blur(1px); }
+  100% { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+}
+
+.screen-fade {
+  animation: screenFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+@keyframes screenFadeIn {
+  0%   { opacity: 0; filter: blur(6px); transform: scale(0.99); }
+  100% { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+
+.halo { position: relative; }
+.halo::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle, rgba(180,40,80,0.18) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes breathPulse {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50% { transform: scale(1.18); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   מבנה עמוד
+   ============================================================ */
+.view {
+  position: relative;
+  z-index: 2;
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.75rem 1.25rem;
+}
+.view-hidden { display: none !important; }
+
+.stage {
+  width: 100%;
+  max-width: 430px;
+}
+
+/* === מסך מעטפה === */
+#envelope-view .stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.75rem;
+  text-align: center;
+}
+
+.envelope-heading { display: flex; flex-direction: column; gap: 0.6rem; }
+.envelope-heading h1 {
+  font-size: clamp(1.65rem, 6vw, 2.1rem);
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+.envelope-heading p {
+  font-size: 1rem;
+  font-weight: 300;
+  color: rgba(245,245,247,0.55);
+  line-height: 1.7;
+}
+
+#envelopeBtn {
+  position: relative;
+  width: 250px;
+  height: 168px;
+  perspective: 900px;
+  border-radius: 14px;
+}
+.envelope {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.envelope-body {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(150deg, rgba(236,72,153,0.16) 0%, rgba(168,85,247,0.14) 55%, rgba(255,255,255,0.03) 100%);
+  border: 1px solid rgba(236,114,249,0.25);
+  box-shadow:
+    0 0 45px rgba(236,72,153,0.16),
+    inset 0 0 30px rgba(168,85,247,0.08),
+    0 18px 40px -14px rgba(0,0,0,0.6);
+  overflow: hidden;
+  transition: box-shadow 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.envelope-body::after {
+  /* קפלים תחתונים של המעטפה */
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 60%;
+  background:
+    linear-gradient(120deg, transparent 49%, rgba(255,255,255,0.05) 50%, transparent 51%),
+    linear-gradient(240deg, transparent 49%, rgba(255,255,255,0.05) 50%, transparent 51%);
+}
+.envelope-flap {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 52%;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: linear-gradient(160deg, rgba(180,40,80,0.5) 0%, rgba(120,30,90,0.55) 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  transform-origin: top center;
+  transition: transform 0.9s cubic-bezier(0.45, 0, 0.2, 1);
+  z-index: 3;
+}
+.wax-seal {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  filter: drop-shadow(0 0 14px rgba(236,72,153,0.55));
+}
+.wax-seal::before,
+.wax-seal::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 28px;
+  background: linear-gradient(160deg, #E879F9 0%, #B42850 100%);
+  border-radius: 18px 18px 0 0;
+  top: 0;
+}
+.wax-seal::before { left: 8px; transform: rotate(-45deg); transform-origin: 0 100%; }
+.wax-seal::after { right: 8px; transform: rotate(45deg); transform-origin: 100% 100%; }
+
+.envelope-hint {
+  position: absolute;
+  bottom: -2.1rem;
+  inset-inline: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 300;
+  color: rgba(245,245,247,0.4);
+  animation: breathPulse 3.2s ease-in-out infinite;
+}
+
+#envelopeBtn[data-phase="opening"] .envelope-flap { transform: rotateX(-172deg); }
+#envelopeBtn[data-phase="opening"] .envelope-body,
+#envelopeBtn[data-phase="opened"] .envelope-body {
+  box-shadow:
+    0 0 85px rgba(236,72,153,0.32),
+    inset 0 0 40px rgba(168,85,247,0.12),
+    0 18px 40px -14px rgba(0,0,0,0.6);
+}
+#envelopeBtn[data-phase="opened"] .envelope {
+  transform: scale(0.92);
+  opacity: 0;
+  transition: transform 0.7s cubic-bezier(0.16,1,0.3,1), opacity 0.7s cubic-bezier(0.16,1,0.3,1);
+}
+
+/* === מסך לוח שנה === */
+#calendar-view .stage { display: flex; flex-direction: column; gap: 1.6rem; }
+
+.cal-intro {
+  text-align: center;
+  font-size: 0.92rem;
+  font-weight: 300;
+  color: rgba(245,245,247,0.5);
+  line-height: 1.7;
+  padding-inline: 0.5rem;
+}
+
+.cal-card { padding: 1.4rem 1.15rem 1.6rem; display: flex; flex-direction: column; gap: 1.2rem; }
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.cal-nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 1.1rem;
+  color: rgba(245,245,247,0.8);
+  transition: background 0.4s cubic-bezier(0.16,1,0.3,1), transform 0.4s cubic-bezier(0.16,1,0.3,1);
+  flex-shrink: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cal-nav-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+}
+.cal-nav-btn:active { transform: scale(0.94); }
+.cal-month-label {
+  font-size: 1.2rem;
+  font-weight: 400;
+  text-align: center;
+  flex: 1;
+}
+
+.cal-weekdays, .cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+}
+.cal-weekdays span {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: rgba(245,245,247,0.42);
+  padding-block: 0.2rem;
+}
+.cal-day-cell {
+  aspect-ratio: 1;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: rgba(245,245,247,0.34);
+  position: relative;
+}
+.cal-day-cell.is-empty { visibility: hidden; }
+.cal-day-cell.is-event {
+  cursor: pointer;
+  color: #fff;
+  font-weight: 500;
+  background: linear-gradient(145deg, rgba(236,72,153,0.28) 0%, rgba(168,85,247,0.26) 100%);
+  border: 1px solid rgba(236,114,249,0.4);
+  box-shadow: 0 0 18px rgba(236,72,153,0.22);
+  transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+.cal-day-cell.is-event::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1px solid rgba(236,114,249,0.35);
+  animation: breathPulse 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cal-day-cell.is-event:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 0 30px rgba(236,72,153,0.35);
+  }
+}
+.cal-day-cell.is-event:active { transform: scale(0.96); }
+.cal-day-cell.is-today-real { box-shadow: 0 0 34px rgba(236,72,153,0.5); }
+
+/* === מודאל רמז === */
+#hint-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(4, 3, 10, 0.72);
+  backdrop-filter: blur(6px);
+}
+#hint-overlay.view-hidden { display: none !important; }
+
+.hint-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 2rem 1.6rem 1.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.35rem;
+  text-align: center;
+  position: relative;
+}
+
+.hint-close {
+  position: absolute;
+  top: 0.7rem;
+  inset-inline-end: 0.7rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(245,245,247,0.7);
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hint-close:hover { background: rgba(255,255,255,0.1); }
+}
+.hint-close:active { transform: scale(0.92); }
+
+.hint-date {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+}
+.hint-date .weekday { font-size: 0.85rem; font-weight: 300; color: rgba(245,245,247,0.5); }
+.hint-date .full-date { font-size: 1.35rem; font-weight: 400; }
+
+.countdown-row { display: flex; gap: 0.55rem; }
+.countdown-unit { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
+.countdown-unit .val {
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(236,114,249,0.18);
+}
+.countdown-unit .lbl { font-size: 0.68rem; font-weight: 300; color: rgba(245,245,247,0.4); }
+
+.hint-text {
+  font-size: 1.02rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: rgba(245,245,247,0.88);
+  white-space: pre-line;
+}
+
+.hint-stage-tag {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: rgba(236,114,249,0.75);
+  border: 1px solid rgba(236,114,249,0.3);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+}
+
+/* responsive: מסכים רחבים יותר */
+@media (min-width: 480px) {
+  .stage { max-width: 400px; }
+}
+@media (max-width: 359px) {
+  .countdown-unit .val { width: 2.7rem; height: 2.7rem; font-size: 1.1rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-warm" aria-hidden="true"></div>
+<div class="film-grain" aria-hidden="true"></div>
+<div class="particle-layer" id="particleLayer" aria-hidden="true"></div>
+
+<!-- ============ מסך 1: מעטפת הזמנה ============ -->
+<main id="envelope-view" class="view">
+  <div class="stage">
+    <div class="envelope-heading">
+      <h1 class="word-appear" style="animation-delay:.05s">הזמנה אישית</h1>
+      <p class="word-appear" style="animation-delay:.35s">בשבילך בלבד.</p>
+    </div>
+
+    <button type="button" id="envelopeBtn" data-phase="closed" aria-label="פתחי את ההזמנה">
+      <div class="envelope halo">
+        <div class="envelope-body"></div>
+        <div class="wax-seal"></div>
+        <div class="envelope-flap"></div>
+      </div>
+      <span class="envelope-hint">לחצי לפתוח...</span>
+    </button>
+  </div>
+</main>
+
+<!-- ============ מסך 2: לוח השנה ============ -->
+<main id="calendar-view" class="view view-hidden">
+  <div class="stage">
+    <p class="cal-intro word-appear">כל נקודה זוהרת כאן היא ערב ששמרתי בשבילך. געי בה כדי לדעת עוד.</p>
+
+    <section class="cal-card glass">
+      <div class="cal-nav">
+        <button type="button" class="cal-nav-btn" id="prevMonthBtn" aria-label="החודש הקודם">→</button>
+        <div class="cal-month-label" id="monthLabel"></div>
+        <button type="button" class="cal-nav-btn" id="nextMonthBtn" aria-label="החודש הבא">←</button>
+      </div>
+
+      <div class="cal-weekdays">
+        <span>א</span><span>ב</span><span>ג</span><span>ד</span><span>ה</span><span>ו</span><span>ש</span>
+      </div>
+
+      <div class="cal-grid" id="calGrid"></div>
+    </section>
+  </div>
+</main>
+
+<!-- ============ מודאל רמז ============ -->
+<div id="hint-overlay" class="view-hidden" role="dialog" aria-modal="true" aria-labelledby="hintDate">
+  <div class="hint-card glass" id="hintCard" tabindex="-1">
+    <button type="button" class="hint-close" id="hintCloseBtn" aria-label="סגירה">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <span class="hint-stage-tag" id="hintStageTag"></span>
+
+    <div class="hint-date" id="hintDate">
+      <span class="weekday" id="hintWeekday"></span>
+      <span class="full-date" id="hintFullDate"></span>
+    </div>
+
+    <div class="countdown-row" id="countdownRow">
+      <div class="countdown-unit"><span class="val" id="cdDays">00</span><span class="lbl">ימים</span></div>
+      <div class="countdown-unit"><span class="val" id="cdHours">00</span><span class="lbl">שעות</span></div>
+      <div class="countdown-unit"><span class="val" id="cdMinutes">00</span><span class="lbl">דקות</span></div>
+      <div class="countdown-unit"><span class="val" id="cdSeconds">00</span><span class="lbl">שניות</span></div>
+    </div>
+
+    <p class="hint-text word-appear" id="hintText" style="animation-delay:.1s"></p>
+
+    <a href="#" class="action-btn word-appear view-hidden" id="hintActionBtn" target="_blank" rel="noopener noreferrer" style="animation-delay:.25s">
+      פתחי את המסע ←
+    </a>
+
+    <button type="button" class="secondary-btn" id="hintCloseBtn2">סגרי, אחזור אליי כשיגיע הזמן</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     ⭐ כאן עורכים את הערבים — תאריך, קישור לאפליקציית המסע, ורמזים
+     hints.far = 4+ ימים לפני | near = 2-3 ימים | dayBefore = יום לפני | today = היום עצמו (+כפתור)
+     ============================================================ */
+  const EVENTS = [
+    {
+      date: '2026-08-03',
+      time: '19:00',
+      link: 'https://raniv123.github.io/RRXO2/',
+      hints: {
+        far: 'משהו מחכה לך בתאריך הזה... זה כל מה שמותר לי לגלות. 🌙',
+        near: 'סגרי את העיניים. דמייני מים שקטים, רוח חמה... עוד לא. 🌊',
+        dayBefore: 'מחר בערב. וילה. רק שנינו. מעל המים. תהיי מוכנה... 🕯️',
+        today: 'הערב. וילה על המים מחכה רק לך.\nהכול מוכן. כשתהיי לבד — לחצי.',
+      },
+    },
+    {
+      date: '2026-08-16',
+      time: '20:30',
+      link: 'https://raniv123.github.io/RRXO2/',
+      hints: {
+        far: 'עוד ערב נשמר לך בלוח. בינתיים — רק תדעי שהוא שם.',
+        near: 'התאריך מתקרב. הפעם לא יוצאים מהבית... זה כל הרמז.',
+        dayBefore: 'מחר בלילה, ארבע קירות ותאורה עמומה. תני לי לדאוג לשאר.',
+        today: 'הערב. הבית שלנו, רק אנחנו.\nכשהילדים ישנים — לחצי, ותני לי להוביל.',
+      },
+    },
+    {
+      date: '2026-09-10',
+      time: '19:30',
+      link: 'https://raniv123.github.io/RRXO2/',
+      hints: {
+        far: 'תאריך שלישי כבר מחכה. עוד מוקדם לספר — תני לזמן לעבוד.',
+        near: 'משהו קטן משתנה בתוכנית שלנו לערב הזה. בקרוב תביני למה.',
+        dayBefore: 'מחר בערב יש לי הפתעה שלא סיפרתי לך עליה בכלל.',
+        today: 'הערב מגיע. אני כבר בדרך להכין הכול.\nלחצי, ותני לי להפתיע אותך.',
+      },
+    },
+  ];
+
+  const HEBREW_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const HEBREW_WEEKDAYS_FULL = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','שבת'];
+
+  const params = new URLSearchParams(location.search);
+  const previewStage = params.get('preview'); // far | near | dayBefore | today
+
+  /* ---------- פרטיקלים ---------- */
+  const particleLayer = document.getElementById('particleLayer');
+  for (let i = 0; i < 10; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 2 + Math.random() * 3;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.animationDuration = (5 + Math.random() * 5) + 's';
+    p.style.animationDelay = (Math.random() * 5) + 's';
+    particleLayer.appendChild(p);
+  }
+
+  /* ---------- מסך פתיחה: מעטפה ---------- */
+  const envelopeBtn = document.getElementById('envelopeBtn');
+  const envelopeView = document.getElementById('envelope-view');
+  const calendarView = document.getElementById('calendar-view');
+
+  envelopeBtn.addEventListener('click', function () {
+    if (envelopeBtn.dataset.phase !== 'closed') return;
+    envelopeBtn.dataset.phase = 'opening';
+    setTimeout(function () { envelopeBtn.dataset.phase = 'opened'; }, 850);
+    setTimeout(function () {
+      envelopeView.classList.add('view-hidden');
+      calendarView.classList.remove('view-hidden');
+    }, 1500);
+  });
+
+  /* ---------- לוח שנה ---------- */
+  const monthLabel = document.getElementById('monthLabel');
+  const calGrid = document.getElementById('calGrid');
+  const prevMonthBtn = document.getElementById('prevMonthBtn');
+  const nextMonthBtn = document.getElementById('nextMonthBtn');
+
+  const firstEventDate = new Date(EVENTS[0].date + 'T00:00:00');
+  let viewYear = firstEventDate.getFullYear();
+  let viewMonth = firstEventDate.getMonth();
+
+  function eventForDate(y, m, d) {
+    const key = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    return EVENTS.find(function (e) { return e.date === key; });
+  }
+
+  function renderCalendar() {
+    monthLabel.textContent = HEBREW_MONTHS[viewMonth] + ' ' + viewYear;
+    calGrid.innerHTML = '';
+
+    const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=ראשון
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const today = new Date();
+    const isRealTodayMonth = today.getFullYear() === viewYear && today.getMonth() === viewMonth;
+
+    for (let i = 0; i < firstDay; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'cal-day-cell is-empty';
+      calGrid.appendChild(empty);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'cal-day-cell';
+      cell.textContent = d;
+
+      const ev = eventForDate(viewYear, viewMonth, d);
+      if (ev) {
+        cell.classList.add('is-event');
+        cell.setAttribute('role', 'button');
+        cell.setAttribute('tabindex', '0');
+        cell.setAttribute('aria-label', 'ערב מיוחד בתאריך ' + d + ' ב' + HEBREW_MONTHS[viewMonth]);
+        if (isRealTodayMonth && today.getDate() === d) cell.classList.add('is-today-real');
+        cell.addEventListener('click', function () { openHint(ev); });
+        cell.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openHint(ev); }
+        });
+      }
+
+      calGrid.appendChild(cell);
+    }
+  }
+
+  prevMonthBtn.addEventListener('click', function () {
+    viewMonth--;
+    if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    renderCalendar();
+  });
+  nextMonthBtn.addEventListener('click', function () {
+    viewMonth++;
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    renderCalendar();
+  });
+
+  renderCalendar();
+
+  /* ---------- מודאל רמז ---------- */
+  const overlay = document.getElementById('hint-overlay');
+  const hintCard = document.getElementById('hintCard');
+  const hintWeekday = document.getElementById('hintWeekday');
+  const hintFullDate = document.getElementById('hintFullDate');
+  const hintText = document.getElementById('hintText');
+  const hintStageTag = document.getElementById('hintStageTag');
+  const hintActionBtn = document.getElementById('hintActionBtn');
+  const cdDays = document.getElementById('cdDays');
+  const cdHours = document.getElementById('cdHours');
+  const cdMinutes = document.getElementById('cdMinutes');
+  const cdSeconds = document.getElementById('cdSeconds');
+  const closeBtn1 = document.getElementById('hintCloseBtn');
+  const closeBtn2 = document.getElementById('hintCloseBtn2');
+
+  const STAGE_LABELS = { far: 'עוד זמן', near: 'מתקרב', dayBefore: 'מחר', today: 'היום!' };
+  let countdownInterval = null;
+  let lastFocused = null;
+
+  function getRealStage(eventDate) {
+    const now = new Date();
+    const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventMid = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+    const diffDays = Math.round((eventMid - todayMid) / 86400000);
+    if (diffDays <= 0) return 'today';
+    if (diffDays === 1) return 'dayBefore';
+    if (diffDays <= 3) return 'near';
+    return 'far';
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function openHint(ev) {
+    lastFocused = document.activeElement;
+    const eventDateOnly = new Date(ev.date + 'T00:00:00');
+    const target = new Date(ev.date + 'T' + ev.time + ':00');
+
+    const realStage = getRealStage(eventDateOnly);
+    const stage = (previewStage && ev.hints[previewStage]) ? previewStage : realStage;
+
+    hintWeekday.textContent = HEBREW_WEEKDAYS_FULL[eventDateOnly.getDay()];
+    hintFullDate.textContent = eventDateOnly.getDate() + ' ב' + HEBREW_MONTHS[eventDateOnly.getMonth()] + ' ' + eventDateOnly.getFullYear();
+    hintText.textContent = ev.hints[stage];
+    hintStageTag.textContent = STAGE_LABELS[stage];
+
+    if (stage === 'today') {
+      hintActionBtn.classList.remove('view-hidden');
+      hintActionBtn.href = ev.link;
+    } else {
+      hintActionBtn.classList.add('view-hidden');
+      hintActionBtn.removeAttribute('href');
+    }
+
+    function tick() {
+      const now = new Date();
+      let diff = Math.max(0, target.getTime() - now.getTime());
+      const days = Math.floor(diff / 86400000);
+      diff -= days * 86400000;
+      const hours = Math.floor(diff / 3600000);
+      diff -= hours * 3600000;
+      const minutes = Math.floor(diff / 60000);
+      diff -= minutes * 60000;
+      const seconds = Math.floor(diff / 1000);
+      cdDays.textContent = pad(days);
+      cdHours.textContent = pad(hours);
+      cdMinutes.textContent = pad(minutes);
+      cdSeconds.textContent = pad(seconds);
+    }
+    tick();
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(tick, 1000);
+
+    overlay.classList.remove('view-hidden');
+    hintCard.focus();
+    document.addEventListener('keydown', onKeydown);
+  }
+
+  function closeHint() {
+    overlay.classList.add('view-hidden');
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    document.removeEventListener('keydown', onKeydown);
+    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+  }
+
+  function onKeydown(e) { if (e.key === 'Escape') closeHint(); }
+
+  closeBtn1.addEventListener('click', closeHint);
+  closeBtn2.addEventListener('click', closeHint);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeHint(); });
+
+})();
+</script>
+</body>
+</html>
