@@ -398,6 +398,7 @@ a { color: inherit; }
 .cal-weekdays, .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  direction: rtl;
   gap: 0.4rem;
 }
 .cal-weekdays span {
@@ -501,23 +502,53 @@ a { color: inherit; }
 .hint-date .weekday { font-size: 0.85rem; font-weight: 300; color: rgba(245,245,247,0.5); }
 .hint-date .full-date { font-size: 1.35rem; font-weight: 400; }
 
-.countdown-row { display: flex; gap: 0.55rem; }
-.countdown-unit { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
-.countdown-unit .val {
-  width: 3.1rem;
-  height: 3.1rem;
-  border-radius: 14px;
+/* === ספירה לאחור — עיגול-ימים דומיננטי + שעון LTR === */
+.countdown-hero { display: flex; flex-direction: column; align-items: center; gap: 1.15rem; }
+
+.days-circle {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-  direction: ltr;
-  background: rgba(255,255,255,0.045);
-  border: 1px solid rgba(236,114,249,0.18);
+  gap: 0.15rem;
+  background: radial-gradient(circle at 35% 30%, rgba(236,72,153,0.38) 0%, rgba(168,85,247,0.24) 55%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid rgba(236,114,249,0.4);
+  box-shadow: 0 0 55px rgba(236,72,153,0.35), inset 0 0 26px rgba(168,85,247,0.16);
 }
-.countdown-unit .lbl { font-size: 0.68rem; font-weight: 300; color: rgba(245,245,247,0.4); }
+.days-circle::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 1px solid rgba(236,114,249,0.3);
+  animation: breathPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+.days-num { font-size: 2.6rem; font-weight: 300; line-height: 1; direction: ltr; font-variant-numeric: tabular-nums; }
+.days-lbl { font-size: 0.8rem; font-weight: 300; color: rgba(245,245,247,0.6); }
+.days-circle.is-today .days-num { font-size: 1.55rem; font-weight: 400; direction: rtl; }
+
+.clock-wrap { width: 210px; }
+.clock-digits { display: grid; grid-template-columns: repeat(3, 1fr); direction: ltr; }
+.clock-digits span {
+  position: relative;
+  text-align: center;
+  font-size: 1.85rem;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+}
+.clock-digits span:not(:last-child)::after {
+  content: ':';
+  position: absolute;
+  inset-inline-end: -0.3em;
+  color: rgba(245,245,247,0.35);
+}
+.clock-labels { display: grid; grid-template-columns: repeat(3, 1fr); direction: ltr; margin-top: 0.35rem; }
+.clock-labels span { text-align: center; font-size: 0.68rem; font-weight: 300; color: rgba(245,245,247,0.4); }
 
 .hint-text {
   font-size: 1.02rem;
@@ -541,7 +572,10 @@ a { color: inherit; }
   .stage { max-width: 400px; }
 }
 @media (max-width: 359px) {
-  .countdown-unit .val { width: 2.7rem; height: 2.7rem; font-size: 1.1rem; }
+  .days-circle { width: 112px; height: 112px; }
+  .days-num { font-size: 2.15rem; }
+  .clock-wrap { width: 180px; }
+  .clock-digits span { font-size: 1.55rem; }
 }
 </style>
 </head>
@@ -607,11 +641,19 @@ a { color: inherit; }
       <span class="full-date" id="hintFullDate"></span>
     </div>
 
-    <div class="countdown-row" id="countdownRow">
-      <div class="countdown-unit"><span class="val" id="cdDays">00</span><span class="lbl">ימים</span></div>
-      <div class="countdown-unit"><span class="val" id="cdHours">00</span><span class="lbl">שעות</span></div>
-      <div class="countdown-unit"><span class="val" id="cdMinutes">00</span><span class="lbl">דקות</span></div>
-      <div class="countdown-unit"><span class="val" id="cdSeconds">00</span><span class="lbl">שניות</span></div>
+    <div class="countdown-hero" id="countdownHero">
+      <div class="days-circle halo" id="daysCircle">
+        <span class="days-num" id="cdDays">00</span>
+        <span class="days-lbl" id="daysLbl">ימים</span>
+      </div>
+      <div class="clock-wrap">
+        <div class="clock-digits" dir="ltr">
+          <span id="cdHours">00</span><span id="cdMinutes">00</span><span id="cdSeconds">00</span>
+        </div>
+        <div class="clock-labels" dir="ltr">
+          <span>שעות</span><span>דקות</span><span>שניות</span>
+        </div>
+      </div>
     </div>
 
     <p class="hint-text word-appear" id="hintText" style="animation-delay:.1s"></p>
@@ -672,7 +714,9 @@ a { color: inherit; }
   const HEBREW_WEEKDAYS_FULL = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','שבת'];
 
   const params = new URLSearchParams(location.search);
-  const previewStage = params.get('preview'); // far | near | dayBefore | today
+  const ALLOWED_PREVIEW = new Set(['far', 'near', 'dayBefore', 'today']);
+  const rawPreview = params.get('preview');
+  const previewStage = ALLOWED_PREVIEW.has(rawPreview) ? rawPreview : null;
 
   /* ---------- פרטיקלים ---------- */
   const particleLayer = document.getElementById('particleLayer');
@@ -694,14 +738,18 @@ a { color: inherit; }
   const envelopeView = document.getElementById('envelope-view');
   const calendarView = document.getElementById('calendar-view');
 
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   envelopeBtn.addEventListener('click', function () {
     if (envelopeBtn.dataset.phase !== 'closed') return;
     envelopeBtn.dataset.phase = 'opening';
-    setTimeout(function () { envelopeBtn.dataset.phase = 'opened'; }, 850);
+    const t1 = prefersReducedMotion ? 50 : 850;
+    const t2 = prefersReducedMotion ? 100 : 1500;
+    setTimeout(function () { envelopeBtn.dataset.phase = 'opened'; }, t1);
     setTimeout(function () {
       envelopeView.classList.add('view-hidden');
       calendarView.classList.remove('view-hidden');
-    }, 1500);
+    }, t2);
   });
 
   /* ---------- לוח שנה ---------- */
@@ -710,12 +758,17 @@ a { color: inherit; }
   const prevMonthBtn = document.getElementById('prevMonthBtn');
   const nextMonthBtn = document.getElementById('nextMonthBtn');
 
+  // שעון ישראל — כל חישוב "היום" עובר דרכו, לא דרך אזור הזמן של המכשיר
+  const JERUSALEM_FORMATTER = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' });
+  function jerusalemDateString(d) { return JERUSALEM_FORMATTER.format(d); } // 'YYYY-MM-DD'
+
   const firstEventDate = new Date(EVENTS[0].date + 'T00:00:00');
   let viewYear = firstEventDate.getFullYear();
   let viewMonth = firstEventDate.getMonth();
 
+  function dateKey(y, m, d) { return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
   function eventForDate(y, m, d) {
-    const key = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const key = dateKey(y, m, d);
     return EVENTS.find(function (e) { return e.date === key; });
   }
 
@@ -725,8 +778,7 @@ a { color: inherit; }
 
     const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=ראשון
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const today = new Date();
-    const isRealTodayMonth = today.getFullYear() === viewYear && today.getMonth() === viewMonth;
+    const todayKey = jerusalemDateString(new Date());
 
     for (let i = 0; i < firstDay; i++) {
       const empty = document.createElement('div');
@@ -739,13 +791,17 @@ a { color: inherit; }
       cell.className = 'cal-day-cell';
       cell.textContent = d;
 
+      if (dateKey(viewYear, viewMonth, d) === todayKey) {
+        cell.classList.add('is-today-real');
+        cell.setAttribute('aria-current', 'date');
+      }
+
       const ev = eventForDate(viewYear, viewMonth, d);
       if (ev) {
         cell.classList.add('is-event');
         cell.setAttribute('role', 'button');
         cell.setAttribute('tabindex', '0');
         cell.setAttribute('aria-label', 'ערב מיוחד בתאריך ' + d + ' ב' + HEBREW_MONTHS[viewMonth]);
-        if (isRealTodayMonth && today.getDate() === d) cell.classList.add('is-today-real');
         cell.addEventListener('click', function () { openHint(ev); });
         cell.addEventListener('keydown', function (e) {
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openHint(ev); }
@@ -781,19 +837,25 @@ a { color: inherit; }
   const cdHours = document.getElementById('cdHours');
   const cdMinutes = document.getElementById('cdMinutes');
   const cdSeconds = document.getElementById('cdSeconds');
+  const countdownHero = document.getElementById('countdownHero');
+  const daysCircle = document.getElementById('daysCircle');
+  const daysLbl = document.getElementById('daysLbl');
   const closeBtn1 = document.getElementById('hintCloseBtn');
   const closeBtn2 = document.getElementById('hintCloseBtn2');
 
-  const STAGE_LABELS = { far: 'עוד זמן', near: 'מתקרב', dayBefore: 'מחר', today: 'היום!' };
+  const STAGE_LABELS = { far: 'עוד זמן', near: 'מתקרב', dayBefore: 'מחר', today: 'היום!', past: 'היה' };
+  const PAST_TEXT = 'הערב הזה כבר היה שלנו 💜';
   let countdownInterval = null;
   let lastFocused = null;
+  let activeEvent = null;
+  let activeStage = null;
 
-  function getRealStage(eventDate) {
-    const now = new Date();
-    const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const eventMid = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
-    const diffDays = Math.round((eventMid - todayMid) / 86400000);
-    if (diffDays <= 0) return 'today';
+  // "היום" מחושב לפי לוח השנה של ישראל, לא אזור הזמן של המכשיר
+  function getRealStage(eventDateStr) {
+    const todayKey = jerusalemDateString(new Date());
+    const diffDays = Math.round((new Date(eventDateStr + 'T00:00:00Z') - new Date(todayKey + 'T00:00:00Z')) / 86400000);
+    if (diffDays < 0) return 'past';
+    if (diffDays === 0) return 'today';
     if (diffDays === 1) return 'dayBefore';
     if (diffDays <= 3) return 'near';
     return 'far';
@@ -801,18 +863,10 @@ a { color: inherit; }
 
   function pad(n) { return String(n).padStart(2, '0'); }
 
-  function openHint(ev) {
-    lastFocused = document.activeElement;
-    const eventDateOnly = new Date(ev.date + 'T00:00:00');
-    const target = new Date(ev.date + 'T' + ev.time + ':00');
-
-    const realStage = getRealStage(eventDateOnly);
-    const stage = (previewStage && ev.hints[previewStage]) ? previewStage : realStage;
-
-    hintWeekday.textContent = HEBREW_WEEKDAYS_FULL[eventDateOnly.getDay()];
-    hintFullDate.textContent = eventDateOnly.getDate() + ' ב' + HEBREW_MONTHS[eventDateOnly.getMonth()] + ' ' + eventDateOnly.getFullYear();
-    hintText.textContent = ev.hints[stage];
+  function applyStage(ev, stage) {
+    activeStage = stage;
     hintStageTag.textContent = STAGE_LABELS[stage];
+    hintText.textContent = stage === 'past' ? (ev.hints.past || PAST_TEXT) : ev.hints[stage];
 
     if (stage === 'today') {
       hintActionBtn.classList.remove('view-hidden');
@@ -822,7 +876,27 @@ a { color: inherit; }
       hintActionBtn.removeAttribute('href');
     }
 
+    countdownHero.classList.toggle('view-hidden', stage === 'past');
+    daysCircle.classList.toggle('is-today', stage === 'today');
+    daysLbl.classList.toggle('view-hidden', stage === 'today');
+  }
+
+  function openHint(ev) {
+    lastFocused = document.activeElement;
+    activeEvent = ev;
+    activeStage = null; // מאלץ applyStage לרוץ בטיק הראשון
+    const eventDateOnly = new Date(ev.date + 'T00:00:00');
+    const target = new Date(ev.date + 'T' + ev.time + ':00');
+
+    hintWeekday.textContent = HEBREW_WEEKDAYS_FULL[eventDateOnly.getDay()];
+    hintFullDate.textContent = eventDateOnly.getDate() + ' ב' + HEBREW_MONTHS[eventDateOnly.getMonth()] + ' ' + eventDateOnly.getFullYear();
+
     function tick() {
+      const realStage = getRealStage(ev.date);
+      const stage = (previewStage && ev.hints[previewStage]) ? previewStage : realStage;
+      if (stage !== activeStage) applyStage(ev, stage);
+      if (stage === 'past') return;
+
       const now = new Date();
       let diff = Math.max(0, target.getTime() - now.getTime());
       const days = Math.floor(diff / 86400000);
@@ -832,7 +906,7 @@ a { color: inherit; }
       const minutes = Math.floor(diff / 60000);
       diff -= minutes * 60000;
       const seconds = Math.floor(diff / 1000);
-      cdDays.textContent = pad(days);
+      cdDays.textContent = stage === 'today' ? 'היום' : pad(days);
       cdHours.textContent = pad(hours);
       cdMinutes.textContent = pad(minutes);
       cdSeconds.textContent = pad(seconds);
@@ -840,6 +914,7 @@ a { color: inherit; }
     tick();
     if (countdownInterval) clearInterval(countdownInterval);
     countdownInterval = setInterval(tick, 1000);
+    if (activeStage === 'past') { clearInterval(countdownInterval); countdownInterval = null; }
 
     overlay.classList.remove('view-hidden');
     hintCard.focus();
@@ -850,6 +925,7 @@ a { color: inherit; }
     overlay.classList.add('view-hidden');
     if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
     document.removeEventListener('keydown', onKeydown);
+    activeEvent = null;
     if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
   }
 
@@ -858,6 +934,17 @@ a { color: inherit; }
   closeBtn1.addEventListener('click', closeHint);
   closeBtn2.addEventListener('click', closeHint);
   overlay.addEventListener('click', function (e) { if (e.target === overlay) closeHint(); });
+
+  // חצות עברה בזמן שהטאב היה ברקע? לרענן לוח + כרטיס פתוח (אם יש)
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible') return;
+    renderCalendar();
+    if (activeEvent) {
+      const realStage = getRealStage(activeEvent.date);
+      const stage = (previewStage && activeEvent.hints[previewStage]) ? previewStage : realStage;
+      if (stage !== activeStage) applyStage(activeEvent, stage);
+    }
+  });
 
 })();
 </script>
