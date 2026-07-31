@@ -53,7 +53,7 @@ button {
   border: none;
 }
 
-a { color: inherit; }
+a { color: inherit; text-decoration: none; }
 
 /* === רקע — bg-warm (זהה ל-RRXO) === */
 .bg-warm {
@@ -94,6 +94,12 @@ a { color: inherit; }
 @keyframes particleFloat {
   0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.25; }
   50% { transform: translateY(-22px) rotate(180deg); opacity: 0.6; }
+}
+.celebrate-particle { animation: celebratePop 1.4s ease-out forwards; }
+@keyframes celebratePop {
+  0% { transform: scale(0.3); opacity: 0; }
+  30% { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(0.6) translateY(-40px); opacity: 0; }
 }
 
 /* === זכוכית === */
@@ -164,6 +170,20 @@ a { color: inherit; }
   }
 }
 .secondary-btn:active { transform: translateY(0) scale(0.98); transition: transform 0.1s ease; }
+
+/* === כפתור וואטסאפ — ירוק עדין (זהה לרוח RRXO GiftBox) === */
+.wa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  background: rgba(37,211,102,0.12);
+  border-color: rgba(37,211,102,0.28);
+  color: rgba(120,230,170,0.95);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wa-btn:hover { background: rgba(37,211,102,0.18); border-color: rgba(37,211,102,0.4); }
+}
 
 /* === אנימציית הופעה מהערפל === */
 .word-appear {
@@ -448,7 +468,7 @@ a { color: inherit; }
 .cal-day-cell.is-today-real { box-shadow: 0 0 34px rgba(236,72,153,0.5); }
 
 /* === מודאל רמז === */
-#hint-overlay {
+#hint-overlay, #confirm-overlay {
   position: fixed;
   inset: 0;
   z-index: 10;
@@ -459,7 +479,7 @@ a { color: inherit; }
   background: rgba(4, 3, 10, 0.72);
   backdrop-filter: blur(6px);
 }
-#hint-overlay.view-hidden { display: none !important; }
+#hint-overlay.view-hidden, #confirm-overlay.view-hidden { display: none !important; }
 
 .hint-card {
   width: 100%;
@@ -501,6 +521,9 @@ a { color: inherit; }
 }
 .hint-date .weekday { font-size: 0.85rem; font-weight: 300; color: rgba(245,245,247,0.5); }
 .hint-date .full-date { font-size: 1.35rem; font-weight: 400; }
+
+.confirm-phase { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; width: 100%; }
+.confirm-actions { display: flex; flex-direction: column; align-items: center; gap: 0.85rem; margin-top: 0.6rem; width: 100%; }
 
 /* === ספירה לאחור — עיגול-ימים דומיננטי + שעון LTR === */
 .countdown-hero { display: flex; flex-direction: column; align-items: center; gap: 1.15rem; }
@@ -607,7 +630,7 @@ a { color: inherit; }
 <!-- ============ מסך 2: לוח השנה ============ -->
 <main id="calendar-view" class="view view-hidden">
   <div class="stage">
-    <p class="cal-intro word-appear">כל נקודה זוהרת כאן היא ערב ששמרתי בשבילך. געי בה כדי לדעת עוד.</p>
+    <p class="cal-intro word-appear" id="calIntro"></p>
 
     <section class="cal-card glass">
       <div class="cal-nav">
@@ -662,7 +685,47 @@ a { color: inherit; }
       פתחי את המסע ←
     </a>
 
+    <a href="#" class="secondary-btn wa-btn" id="hintWaBtn" target="_blank" rel="noopener noreferrer">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2.5 3.5A1.5 1.5 0 0 1 4 2h8a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 12 10H6.5L3.5 12.5V10H4A1.5 1.5 0 0 1 2.5 8.5v-5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      </svg>
+      עדכני אותו בוואטסאפ
+    </a>
+
     <button type="button" class="secondary-btn" id="hintCloseBtn2">סגרי, אחזור אליי כשיגיע הזמן</button>
+  </div>
+</div>
+
+<!-- ============ מודאל אישור בחירה ============ -->
+<div id="confirm-overlay" class="view-hidden" role="dialog" aria-modal="true" aria-labelledby="confirmDateLine">
+  <div class="hint-card glass" id="confirmCard" tabindex="-1">
+    <button type="button" class="hint-close" id="confirmCloseBtn" aria-label="סגירה">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div id="confirmQuestion" class="confirm-phase">
+      <div class="hint-date">
+        <span class="full-date" id="confirmDateLine"></span>
+      </div>
+      <p class="hint-text word-appear" style="animation-delay:.05s">זה יהיה הערב שלך?</p>
+      <div class="confirm-actions">
+        <button type="button" class="action-btn word-appear" id="confirmYesBtn" style="animation-delay:.15s">בחרתי ♡</button>
+        <button type="button" class="secondary-btn" id="confirmNoBtn">עוד רגע, אסתכל שוב</button>
+      </div>
+    </div>
+
+    <div id="confirmCelebrate" class="view-hidden confirm-phase">
+      <p class="hint-text word-appear">נשמר. הוא כבר יודע.</p>
+      <a href="#" class="secondary-btn wa-btn" id="confirmWaBtn" target="_blank" rel="noopener noreferrer">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2.5 3.5A1.5 1.5 0 0 1 4 2h8a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 12 10H6.5L3.5 12.5V10H4A1.5 1.5 0 0 1 2.5 8.5v-5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+        </svg>
+        עדכני אותו בוואטסאפ
+      </a>
+      <button type="button" class="secondary-btn" id="confirmDoneBtn">סגרי</button>
+    </div>
   </div>
 </div>
 
@@ -671,52 +734,53 @@ a { color: inherit; }
   'use strict';
 
   /* ============================================================
-     ⭐ כאן עורכים את הערבים — תאריך, קישור לאפליקציית המסע, ורמזים
+     ⭐ כאן עורכים את הסיפור — קישור לאפליקציית המסע, שעת הערב, והרמזים
      hints.far = 4+ ימים לפני | near = 2-3 ימים | dayBefore = יום לפני | today = היום עצמו (+כפתור)
+     ⭐ ושלושת התאריכים שהיא בוחרת מביניהם:
      ============================================================ */
-  const EVENTS = [
-    {
-      date: '2026-08-03',
-      time: '19:00',
-      link: 'https://raniv123.github.io/RRXO2/',
-      hints: {
-        far: 'משהו מחכה לך בתאריך הזה... זה כל מה שמותר לי לגלות. 🌙',
-        near: 'סגרי את העיניים. דמייני מים שקטים, רוח חמה... עוד לא. 🌊',
-        dayBefore: 'מחר בערב. וילה. רק שנינו. מעל המים. תהיי מוכנה... 🕯️',
-        today: 'הערב. וילה על המים מחכה רק לך.\nהכול מוכן. כשתהיי לבד — לחצי.',
-      },
+  const STORY = {
+    link: 'https://raniv123.github.io/RRXO2/',
+    time: '19:00',
+    hints: {
+      far: 'משהו מחכה לך בתאריך הזה... זה כל מה שמותר לי לגלות. 🌙',
+      near: 'סגרי את העיניים. דמייני מים שקטים, רוח חמה... עוד לא. 🌊',
+      dayBefore: 'מחר בערב. וילה. רק שנינו. מעל המים. תהיי מוכנה... 🕯️',
+      today: 'הערב. וילה על המים מחכה רק לך.\nהכול מוכן. כשתהיי לבד — לחצי.',
     },
-    {
-      date: '2026-08-16',
-      time: '20:30',
-      link: 'https://raniv123.github.io/RRXO2/',
-      hints: {
-        far: 'עוד ערב נשמר לך בלוח. בינתיים — רק תדעי שהוא שם.',
-        near: 'התאריך מתקרב. הפעם לא יוצאים מהבית... זה כל הרמז.',
-        dayBefore: 'מחר בלילה, ארבע קירות ותאורה עמומה. תני לי לדאוג לשאר.',
-        today: 'הערב. הבית שלנו, רק אנחנו.\nכשהילדים ישנים — לחצי, ותני לי להוביל.',
-      },
-    },
-    {
-      date: '2026-09-10',
-      time: '19:30',
-      link: 'https://raniv123.github.io/RRXO2/',
-      hints: {
-        far: 'תאריך שלישי כבר מחכה. עוד מוקדם לספר — תני לזמן לעבוד.',
-        near: 'משהו קטן משתנה בתוכנית שלנו לערב הזה. בקרוב תביני למה.',
-        dayBefore: 'מחר בערב יש לי הפתעה שלא סיפרתי לך עליה בכלל.',
-        today: 'הערב מגיע. אני כבר בדרך להכין הכול.\nלחצי, ותני לי להפתיע אותך.',
-      },
-    },
-  ];
+  };
+  const CANDIDATE_DATES = ['2026-08-03', '2026-08-04', '2026-08-05'];
 
   const HEBREW_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
   const HEBREW_WEEKDAYS_FULL = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','שבת'];
+  const CHOSEN_KEY = 'invite-chosen-date';
 
   const params = new URLSearchParams(location.search);
   const ALLOWED_PREVIEW = new Set(['far', 'near', 'dayBefore', 'today']);
   const rawPreview = params.get('preview');
   const previewStage = ALLOWED_PREVIEW.has(rawPreview) ? rawPreview : null;
+
+  // כלי לרן: ?reset=1 מוחק את הבחירה השמורה (בדיקות בלבד)
+  if (params.get('reset') === '1') {
+    localStorage.removeItem(CHOSEN_KEY);
+    params.delete('reset');
+    const cleanQuery = params.toString();
+    history.replaceState(null, '', location.pathname + (cleanQuery ? '?' + cleanQuery : '') + location.hash);
+  }
+
+  // אם עוד לא נבחר יום אמיתי אבל יש ?preview — מעמידים פנים שהמועמד הראשון נבחר (נוחות בדיקה לרן, לא נשמר)
+  function getChosenDate() {
+    const stored = localStorage.getItem(CHOSEN_KEY);
+    if (stored) return stored;
+    return previewStage ? CANDIDATE_DATES[0] : null;
+  }
+
+  function formatChosenLine(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return HEBREW_WEEKDAYS_FULL[d.getDay()] + ', ' + d.getDate() + ' ב' + HEBREW_MONTHS[d.getMonth()];
+  }
+  function whatsappHref(dateStr) {
+    return 'https://wa.me/?text=' + encodeURIComponent('בחרתי. ' + formatChosenLine(dateStr) + '. 💜');
+  }
 
   /* ---------- פרטיקלים ---------- */
   const particleLayer = document.getElementById('particleLayer');
@@ -731,6 +795,21 @@ a { color: inherit; }
     p.style.animationDuration = (5 + Math.random() * 5) + 's';
     p.style.animationDelay = (Math.random() * 5) + 's';
     particleLayer.appendChild(p);
+  }
+
+  function spawnCelebrationBurst() {
+    for (let i = 0; i < 14; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle celebrate-particle';
+      const size = 3 + Math.random() * 4;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = (30 + Math.random() * 40) + '%';
+      p.style.top = (30 + Math.random() * 40) + '%';
+      p.style.animationDelay = (Math.random() * 0.3) + 's';
+      particleLayer.appendChild(p);
+      setTimeout(function () { p.remove(); }, 2000);
+    }
   }
 
   /* ---------- מסך פתיחה: מעטפה ---------- */
@@ -755,6 +834,7 @@ a { color: inherit; }
   /* ---------- לוח שנה ---------- */
   const monthLabel = document.getElementById('monthLabel');
   const calGrid = document.getElementById('calGrid');
+  const calIntro = document.getElementById('calIntro');
   const prevMonthBtn = document.getElementById('prevMonthBtn');
   const nextMonthBtn = document.getElementById('nextMonthBtn');
 
@@ -762,19 +842,32 @@ a { color: inherit; }
   const JERUSALEM_FORMATTER = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem' });
   function jerusalemDateString(d) { return JERUSALEM_FORMATTER.format(d); } // 'YYYY-MM-DD'
 
-  const firstEventDate = new Date(EVENTS[0].date + 'T00:00:00');
+  const initialAnchorDate = getChosenDate() || CANDIDATE_DATES[0];
+  const firstEventDate = new Date(initialAnchorDate + 'T00:00:00');
   let viewYear = firstEventDate.getFullYear();
   let viewMonth = firstEventDate.getMonth();
 
   function dateKey(y, m, d) { return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
-  function eventForDate(y, m, d) {
-    const key = dateKey(y, m, d);
-    return EVENTS.find(function (e) { return e.date === key; });
+
+  function markGlow(cell, d, onOpen) {
+    cell.classList.add('is-event');
+    cell.setAttribute('role', 'button');
+    cell.setAttribute('tabindex', '0');
+    cell.setAttribute('aria-label', 'ערב מיוחד בתאריך ' + d + ' ב' + HEBREW_MONTHS[viewMonth]);
+    cell.addEventListener('click', onOpen);
+    cell.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); }
+    });
   }
 
   function renderCalendar() {
     monthLabel.textContent = HEBREW_MONTHS[viewMonth] + ' ' + viewYear;
     calGrid.innerHTML = '';
+
+    const chosen = getChosenDate();
+    calIntro.textContent = chosen
+      ? 'הערב שבחרת מחכה לך. געי בו כדי לדעת עוד.'
+      : 'הוא שמר לך שלושה ערבים. בחרי את שלך ✨';
 
     const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=ראשון
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -790,22 +883,17 @@ a { color: inherit; }
       const cell = document.createElement('div');
       cell.className = 'cal-day-cell';
       cell.textContent = d;
+      const key = dateKey(viewYear, viewMonth, d);
 
-      if (dateKey(viewYear, viewMonth, d) === todayKey) {
+      if (key === todayKey) {
         cell.classList.add('is-today-real');
         cell.setAttribute('aria-current', 'date');
       }
 
-      const ev = eventForDate(viewYear, viewMonth, d);
-      if (ev) {
-        cell.classList.add('is-event');
-        cell.setAttribute('role', 'button');
-        cell.setAttribute('tabindex', '0');
-        cell.setAttribute('aria-label', 'ערב מיוחד בתאריך ' + d + ' ב' + HEBREW_MONTHS[viewMonth]);
-        cell.addEventListener('click', function () { openHint(ev); });
-        cell.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openHint(ev); }
-        });
+      if (chosen) {
+        if (key === chosen) markGlow(cell, d, function () { openHint(key); });
+      } else if (CANDIDATE_DATES.indexOf(key) !== -1) {
+        markGlow(cell, d, function () { openConfirm(key); });
       }
 
       calGrid.appendChild(cell);
@@ -825,6 +913,54 @@ a { color: inherit; }
 
   renderCalendar();
 
+  /* ---------- מודאל אישור בחירה ---------- */
+  const confirmOverlay = document.getElementById('confirm-overlay');
+  const confirmCard = document.getElementById('confirmCard');
+  const confirmDateLine = document.getElementById('confirmDateLine');
+  const confirmQuestion = document.getElementById('confirmQuestion');
+  const confirmCelebrate = document.getElementById('confirmCelebrate');
+  const confirmYesBtn = document.getElementById('confirmYesBtn');
+  const confirmNoBtn = document.getElementById('confirmNoBtn');
+  const confirmCloseBtn = document.getElementById('confirmCloseBtn');
+  const confirmWaBtn = document.getElementById('confirmWaBtn');
+  const confirmDoneBtn = document.getElementById('confirmDoneBtn');
+
+  let pendingDate = null;
+  let confirmLastFocused = null;
+
+  function openConfirm(dateStr) {
+    confirmLastFocused = document.activeElement;
+    pendingDate = dateStr;
+    confirmDateLine.textContent = formatChosenLine(dateStr);
+    confirmQuestion.classList.remove('view-hidden');
+    confirmCelebrate.classList.add('view-hidden');
+    confirmOverlay.classList.remove('view-hidden');
+    confirmCard.focus();
+    document.addEventListener('keydown', onConfirmKeydown);
+  }
+  function closeConfirm() {
+    confirmOverlay.classList.add('view-hidden');
+    document.removeEventListener('keydown', onConfirmKeydown);
+    if (confirmLastFocused && typeof confirmLastFocused.focus === 'function') confirmLastFocused.focus();
+  }
+  function onConfirmKeydown(e) { if (e.key === 'Escape') closeConfirm(); }
+
+  confirmNoBtn.addEventListener('click', closeConfirm);
+  confirmCloseBtn.addEventListener('click', closeConfirm);
+  confirmOverlay.addEventListener('click', function (e) { if (e.target === confirmOverlay) closeConfirm(); });
+
+  confirmYesBtn.addEventListener('click', function () {
+    localStorage.setItem(CHOSEN_KEY, pendingDate);
+    confirmWaBtn.href = whatsappHref(pendingDate);
+    confirmQuestion.classList.add('view-hidden');
+    confirmCelebrate.classList.remove('view-hidden');
+    spawnCelebrationBurst();
+  });
+  confirmDoneBtn.addEventListener('click', function () {
+    closeConfirm();
+    renderCalendar();
+  });
+
   /* ---------- מודאל רמז ---------- */
   const overlay = document.getElementById('hint-overlay');
   const hintCard = document.getElementById('hintCard');
@@ -833,6 +969,7 @@ a { color: inherit; }
   const hintText = document.getElementById('hintText');
   const hintStageTag = document.getElementById('hintStageTag');
   const hintActionBtn = document.getElementById('hintActionBtn');
+  const hintWaBtn = document.getElementById('hintWaBtn');
   const cdDays = document.getElementById('cdDays');
   const cdHours = document.getElementById('cdHours');
   const cdMinutes = document.getElementById('cdMinutes');
@@ -847,7 +984,7 @@ a { color: inherit; }
   const PAST_TEXT = 'הערב הזה כבר היה שלנו 💜';
   let countdownInterval = null;
   let lastFocused = null;
-  let activeEvent = null;
+  let activeDate = null;
   let activeStage = null;
 
   // "היום" מחושב לפי לוח השנה של ישראל, לא אזור הזמן של המכשיר
@@ -863,14 +1000,14 @@ a { color: inherit; }
 
   function pad(n) { return String(n).padStart(2, '0'); }
 
-  function applyStage(ev, stage) {
+  function applyStage(stage) {
     activeStage = stage;
     hintStageTag.textContent = STAGE_LABELS[stage];
-    hintText.textContent = stage === 'past' ? (ev.hints.past || PAST_TEXT) : ev.hints[stage];
+    hintText.textContent = stage === 'past' ? (STORY.hints.past || PAST_TEXT) : STORY.hints[stage];
 
     if (stage === 'today') {
       hintActionBtn.classList.remove('view-hidden');
-      hintActionBtn.href = ev.link;
+      hintActionBtn.href = STORY.link;
     } else {
       hintActionBtn.classList.add('view-hidden');
       hintActionBtn.removeAttribute('href');
@@ -881,20 +1018,21 @@ a { color: inherit; }
     daysLbl.classList.toggle('view-hidden', stage === 'today');
   }
 
-  function openHint(ev) {
+  function openHint(dateStr) {
     lastFocused = document.activeElement;
-    activeEvent = ev;
+    activeDate = dateStr;
     activeStage = null; // מאלץ applyStage לרוץ בטיק הראשון
-    const eventDateOnly = new Date(ev.date + 'T00:00:00');
-    const target = new Date(ev.date + 'T' + ev.time + ':00');
+    const eventDateOnly = new Date(dateStr + 'T00:00:00');
+    const target = new Date(dateStr + 'T' + STORY.time + ':00');
 
     hintWeekday.textContent = HEBREW_WEEKDAYS_FULL[eventDateOnly.getDay()];
     hintFullDate.textContent = eventDateOnly.getDate() + ' ב' + HEBREW_MONTHS[eventDateOnly.getMonth()] + ' ' + eventDateOnly.getFullYear();
+    hintWaBtn.href = whatsappHref(dateStr);
 
     function tick() {
-      const realStage = getRealStage(ev.date);
-      const stage = (previewStage && ev.hints[previewStage]) ? previewStage : realStage;
-      if (stage !== activeStage) applyStage(ev, stage);
+      const realStage = getRealStage(dateStr);
+      const stage = (previewStage && STORY.hints[previewStage]) ? previewStage : realStage;
+      if (stage !== activeStage) applyStage(stage);
       if (stage === 'past') return;
 
       const now = new Date();
@@ -925,7 +1063,7 @@ a { color: inherit; }
     overlay.classList.add('view-hidden');
     if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
     document.removeEventListener('keydown', onKeydown);
-    activeEvent = null;
+    activeDate = null;
     if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
   }
 
@@ -939,10 +1077,10 @@ a { color: inherit; }
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState !== 'visible') return;
     renderCalendar();
-    if (activeEvent) {
-      const realStage = getRealStage(activeEvent.date);
-      const stage = (previewStage && activeEvent.hints[previewStage]) ? previewStage : realStage;
-      if (stage !== activeStage) applyStage(activeEvent, stage);
+    if (activeDate) {
+      const realStage = getRealStage(activeDate);
+      const stage = (previewStage && STORY.hints[previewStage]) ? previewStage : realStage;
+      if (stage !== activeStage) applyStage(stage);
     }
   });
 
