@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ההזמנה — כל השלבים</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0812; color:#fff; font-family:'Segoe UI',Arial,sans-serif; line-height:1.7; padding-block-end:60px; }
+  header { text-align:center; padding:36px 20px 10px; }
+  h1 { font-weight:600; font-size:26px; background:linear-gradient(90deg,#EC4899,#A855F7); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  header p { color:rgba(255,255,255,0.5); font-size:14px; margin-block-start:6px; }
+  .stage { max-width:900px; margin:26px auto; padding:26px; background:linear-gradient(145deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015));
+           border:1px solid rgba(255,255,255,0.08); border-radius:20px; }
+  .stage-head { display:flex; align-items:center; gap:14px; margin-block-end:12px; }
+  .num { min-width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+         background:linear-gradient(135deg,rgba(236,72,153,0.3),rgba(168,85,247,0.3)); border:1px solid rgba(236,72,153,0.4);
+         font-size:19px; font-weight:700; color:#fbcfe8; }
+  h2 { font-size:19px; font-weight:600; }
+  .who { font-size:13px; padding:3px 12px; border-radius:999px; margin-inline-start:auto; white-space:nowrap; }
+  .her { background:rgba(236,72,153,0.15); color:#f9a8d4; border:1px solid rgba(236,72,153,0.3); }
+  .him { background:rgba(59,130,246,0.15); color:#93c5fd; border:1px solid rgba(59,130,246,0.3); }
+  .auto { background:rgba(168,85,247,0.15); color:#d8b4fe; border:1px solid rgba(168,85,247,0.3); }
+  .desc { color:rgba(255,255,255,0.75); font-size:15px; margin-block-end:16px; }
+  .desc b { color:#fff; }
+  .shots { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  .shots figure { flex:0 1 210px; text-align:center; }
+  .shots img { width:100%; border-radius:14px; border:1px solid rgba(255,255,255,0.1); }
+  .shots figcaption { font-size:12.5px; color:rgba(255,255,255,0.5); margin-block-start:6px; }
+  .quote { background:rgba(0,0,0,0.3); border-inline-start:3px solid rgba(236,72,153,0.5); border-radius:8px;
+           padding:12px 16px; margin-block-start:14px; color:rgba(255,255,255,0.85); font-size:14.5px; white-space:pre-line; }
+  .note { margin-block-start:12px; font-size:13.5px; color:rgba(255,213,128,0.85); }
+</style>
+</head>
+<body>
+<header>
+  <h1>ההזמנה האישית — כל השלבים</h1>
+  <p>מהרגע שאתה שולח ועד הערב עצמו</p>
+</header>
+
+<div class="stage">
+  <div class="stage-head"><div class="num">1</div><h2>אתה שולח לה את ההזמנה</h2><span class="who him">אתה</span></div>
+  <p class="desc">וואטסאפ רגיל ממך. ההודעה קצרה ומסתורית — הקישור עושה את השאר.</p>
+  <div class="quote">יש דברים שאני לא יודע להגיד במילים.
+אז הכנתי לך הזמנה. רק שלך. פתחי כשאת לבד... 🌙
+https://raniv123.github.io/INVITE/</div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="num">2</div><h2>היא פותחת — הים והאור</h2><span class="who her">היא</span></div>
+  <p class="desc">מסך מלא: ים לילי ואור זהוב באופק. <b>"געי באור..."</b> — נגיעה מפזרת אדוות זהובות, האור מתקרב וממלא את המסך, והלוח נפתח.</p>
+  <div class="shots">
+    <figure><img src="screenshots/20-water-opening.png" alt="מסך הפתיחה"><figcaption>הפתיחה — נגיעה באור</figcaption></figure>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="num">3</div><h2>היא בוחרת ערב</h2><span class="who her">היא</span></div>
+  <p class="desc">"הוא שמר לך שלושה ערבים. בחרי את שלך" — שני / שלישי / רביעי זוהרים בלוח. בוחרת → מאשרת → <b>הבחירה ננעלת</b> (אין בחירה שוב, רק השעון זז). יכולה להוסיף ליומן שלה.</p>
+  <div class="shots">
+    <figure><img src="screenshots/06-pick.png" alt="הלוח"><figcaption>הלוח — שלושת המועמדים</figcaption></figure>
+    <figure><img src="screenshots/07-confirm.png" alt="אישור"><figcaption>"זה יהיה הערב שלך?"</figcaption></figure>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="num">4</div><h2>מופיע אצלך — ואתה מאשר</h2><span class="who him">אתה</span></div>
+  <p class="desc">אצלה: "הוא כבר רואה את זה... כשהוא יאשר — יחכה לך כאן הרמז הראשון". אצלך (<b>‎#partner</b>, קוד <b>6262</b>): "היא בחרה: יום..." וכפתור <b>"אשר לה ♡"</b>. האישור שלך משחרר את הרמז — התמונה המטושטשת מתחדדת והטקסט נחשף. גם אתה מוסיף ליומן בלחיצה. <b>ואז אומר לי איזה יום — ואני קובע לך את הצלצולים.</b></p>
+  <div class="shots">
+    <figure><img src="screenshots/10-partner-pin.png" alt="קוד"><figcaption>המסך שלך — קוד 6262</figcaption></figure>
+    <figure><img src="screenshots/11-partner-chose.png" alt="היא בחרה"><figcaption>"היא בחרה" + אישור</figcaption></figure>
+    <figure><img src="screenshots/09-her-waiting.png" alt="ממתינה"><figcaption>אצלה — עד האישור שלך</figcaption></figure>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="num">5</div><h2>ימי הציפייה — רמז שמתחמם</h2><span class="who auto">אוטומטי</span></div>
+  <p class="desc">כל יום היא פותחת את הכרטיס: תמונת אווירה + טקסט שמתגבר + ספירה חיה. שום פרט מהסיפור לא נחשף — רק תחושה.</p>
+  <div class="shots">
+    <figure><img src="hint-images/hint-near.jpg" alt="מים ואדים"><figcaption>יומיים לפני — "חם. איטי. ומישהו שחשב על כל פרט"</figcaption></figure>
+    <figure><img src="screenshots/21-hint-with-image.png" alt="יום לפני"><figcaption>יום לפני — הנר והמשי</figcaption></figure>
+  </div>
+  <div class="quote">מחר בלילה.
+הכול כבר מוכן ומחכה. כל פרט במקומו.
+מחר בשעה הזאת כבר לא תוכלי לחשוב על שום דבר אחר.
+תישני טוב — זו הפעם האחרונה שאת נרדמת בלי לדעת.</div>
+</div>
+
+<div class="stage">
+  <div class="stage-head"><div class="num">6</div><h2>היום עצמו — ההקדמה והמסע</h2><span class="who her">היא</span></div>
+  <p class="desc"><b>בבוקר (10:00) הטלפון מצלצל לך</b> — יושבים יחד להכין את שלב הערב. אצלה: "הערב זה קורה... קודם הכנתי לך הקדמה" → <b>טקס ההקדמה</b>: מוזגת יין → מרימה כוסית לחיינו → מתלבשת ומתבשמת → "קחי נשימה... והיכנסי" → <b>"פתחי את המסע"</b> נפתח ומוביל לוילה. <b>לפנות ערב צלצול שני לך</b>: שלח לה 2626 + פתח את המסך שלך במסע — ורואה אותה בלייב.</p>
+  <div class="shots">
+    <figure><img src="screenshots/12-prelude-wine.png" alt="יין"><figcaption>ההקדמה — היין</figcaption></figure>
+    <figure><img src="screenshots/15-prelude-final.png" alt="כניסה"><figcaption>"והיכנסי" — אל המסע</figcaption></figure>
+    <figure><img src="hint-images/hint-today.jpg" alt="גשם"><figcaption>תמונת היום — גשם חם</figcaption></figure>
+  </div>
+  <p class="note">⏰ שני הצלצולים נקבעים אוטומטית ברגע שתגיד לי איזה יום היא בחרה.</p>
+</div>
+
+</body>
+</html>
