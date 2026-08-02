@@ -799,6 +799,41 @@ a { color: inherit; text-decoration: none; }
   </div>
 </main>
 
+<!-- ============ מסך טקס הקדמה (יום עצמו) ============ -->
+<main id="prelude-view" class="view view-hidden">
+  <div class="stage">
+
+    <div id="preludeWine" class="partner-phase">
+      <div class="glass partner-card screen-fade">
+        <p class="word-appear">קודם כל... מזגי לעצמך כוס יין.<br>לאט. בלי למהר. הערב הזה לא הולך לשום מקום.</p>
+        <button type="button" class="action-btn word-appear" id="preludeWineBtn" style="animation-delay:.15s">מזגתי 🍷</button>
+      </div>
+    </div>
+
+    <div id="preludeToast" class="partner-phase view-hidden">
+      <div class="glass partner-card screen-fade">
+        <p class="word-appear">הרימי כוסית. לחיינו.<br>לכל מה שעומד לקרות הערב...<br>לגימה אחת. עצמי עיניים. תני לחום להתפשט.</p>
+        <button type="button" class="action-btn word-appear" id="preludeToastBtn" style="animation-delay:.15s">לחיים 🥂</button>
+      </div>
+    </div>
+
+    <div id="preludeDress" class="partner-phase view-hidden">
+      <div class="glass partner-card screen-fade">
+        <p class="word-appear">עכשיו לכי תתלבשי במשהו שגורם לך להרגיש יפה.<br>תתבשמי בנקודה שאת רוצה שיתקרבו אליה.<br>וכשאת מוכנה באמת — חזרי אליי.</p>
+        <button type="button" class="action-btn word-appear" id="preludeDressBtn" style="animation-delay:.15s">אני מוכנה ♡</button>
+      </div>
+    </div>
+
+    <div id="preludeFinal" class="partner-phase view-hidden">
+      <div class="glass partner-card screen-fade">
+        <p class="word-appear">את מושלמת.<br>קחי נשימה עמוקה אחת...<br>והיכנסי.</p>
+        <a href="#" class="action-btn word-appear" id="preludeFinalLink" target="_blank" rel="noopener noreferrer" style="animation-delay:.15s">פתחי את המסע ←</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
 <script>
 (function () {
   'use strict';
@@ -812,10 +847,10 @@ a { color: inherit; text-decoration: none; }
     link: 'https://raniv123.github.io/RRXO2/',
     time: '19:00',
     hints: {
-      far: 'משהו מחכה לך בתאריך הזה... זה כל מה שמותר לי לגלות. 🌙',
-      near: 'סגרי את העיניים. דמייני מים שקטים, רוח חמה... עוד לא. 🌊',
-      dayBefore: 'מחר בערב. וילה. רק שנינו. מעל המים. תהיי מוכנה... 🕯️',
-      today: 'הערב. וילה על המים מחכה רק לך.\nהכול מוכן. כשתהיי לבד — לחצי.',
+      far: 'שמרתי לך ערב שכולו רק בשבילך.\nאני כבר יודע מה יקרה בו. את — עוד לא. 🌙',
+      near: 'עצמי עיניים רגע.\nמים שקטים. אוויר חם על העור. ואת... לא לבד שם.\nעוד קצת. 🌊',
+      dayBefore: 'מחר בלילה אני לוקח אותך למקום שאיש לא מכיר.\nתישני טוב הלילה — זה הלילה האחרון שאת נרדמת רגועה. 🕯️',
+      today: 'הערב זה קורה.\nאבל רגע... לא כל כך מהר. הכנתי לך הקדמה. 🥂',
     },
   };
   const CANDIDATE_DATES = ['2026-08-03', '2026-08-04', '2026-08-05'];
@@ -826,6 +861,7 @@ a { color: inherit; text-decoration: none; }
   const CHOSEN_TS_KEY = 'invite-chosen-ts';
   const ACK_KEY = 'invite-ack';
   const PARTNER_VERIFIED_KEY = 'invite-partner-verified';
+  const PRELUDE_KEY = 'invite-prelude-step';
 
   const params = new URLSearchParams(location.search);
   const ALLOWED_PREVIEW = new Set(['far', 'near', 'dayBefore', 'today']);
@@ -838,6 +874,7 @@ a { color: inherit; text-decoration: none; }
     localStorage.removeItem(CHOSEN_TS_KEY);
     localStorage.removeItem(ACK_KEY);
     localStorage.removeItem(PARTNER_VERIFIED_KEY);
+    localStorage.removeItem(PRELUDE_KEY);
     params.delete('reset');
     const cleanQuery = params.toString();
     history.replaceState(null, '', location.pathname + (cleanQuery ? '?' + cleanQuery : '') + location.hash);
@@ -1171,7 +1208,7 @@ a { color: inherit; text-decoration: none; }
 
   function applyStage(stage) {
     activeStage = stage;
-    const locked = stage !== 'past' && !isAcked();
+    const locked = stage !== 'past' && !isAcked() && !previewStage;
     hintWasLocked = locked;
 
     hintStageTag.textContent = locked ? MYSTERY_TAG : STAGE_LABELS[stage];
@@ -1180,11 +1217,11 @@ a { color: inherit; text-decoration: none; }
       : (stage === 'past' ? (STORY.hints.past || PAST_TEXT) : STORY.hints[stage]);
 
     if (!locked && stage === 'today') {
-      hintActionBtn.classList.remove('view-hidden');
-      hintActionBtn.href = STORY.link;
+      updateTodayCTA();
     } else {
       hintActionBtn.classList.add('view-hidden');
       hintActionBtn.removeAttribute('href');
+      hintActionBtn.onclick = null;
     }
 
     countdownHero.classList.toggle('view-hidden', stage === 'past');
@@ -1205,6 +1242,72 @@ a { color: inherit; text-decoration: none; }
       hintActionBtn.classList.add('word-appear');
     }
     spawnCelebrationBurst();
+  }
+
+  /* ---------- טקס הקדמה (יום עצמו) ---------- */
+  const isPreviewToday = previewStage === 'today'; // פריוויו לא שומר התקדמות
+  let previewPreludeStep = 1;
+  const preludeView = document.getElementById('prelude-view');
+  const preludeSteps = {
+    1: document.getElementById('preludeWine'),
+    2: document.getElementById('preludeToast'),
+    3: document.getElementById('preludeDress'),
+    4: document.getElementById('preludeFinal'),
+  };
+
+  function getPreludeStep() {
+    if (isPreviewToday) return previewPreludeStep;
+    const v = localStorage.getItem(PRELUDE_KEY);
+    return v === 'done' ? 4 : (Number(v) || 1);
+  }
+  function setPreludeStep(step) {
+    if (isPreviewToday) { previewPreludeStep = step; return; }
+    localStorage.setItem(PRELUDE_KEY, step === 4 ? 'done' : String(step));
+  }
+  function isPreludeDone() {
+    return isPreviewToday ? previewPreludeStep === 4 : localStorage.getItem(PRELUDE_KEY) === 'done';
+  }
+
+  function showPreludeStep(step) {
+    Object.keys(preludeSteps).forEach(function (k) {
+      preludeSteps[k].classList.toggle('view-hidden', Number(k) !== step);
+    });
+    const card = preludeSteps[step].querySelector('.screen-fade');
+    card.classList.remove('screen-fade');
+    void card.offsetWidth;
+    card.classList.add('screen-fade');
+  }
+
+  function openPrelude() {
+    closeHint();
+    calendarView.classList.add('view-hidden');
+    document.getElementById('preludeFinalLink').href = STORY.link;
+    const step = getPreludeStep();
+    showPreludeStep(step);
+    preludeView.classList.remove('view-hidden');
+  }
+
+  document.getElementById('preludeWineBtn').addEventListener('click', function () {
+    setPreludeStep(2); showPreludeStep(2);
+  });
+  document.getElementById('preludeToastBtn').addEventListener('click', function () {
+    setPreludeStep(3); showPreludeStep(3);
+  });
+  document.getElementById('preludeDressBtn').addEventListener('click', function () {
+    setPreludeStep(4); showPreludeStep(4);
+  });
+
+  function updateTodayCTA() {
+    hintActionBtn.classList.remove('view-hidden');
+    if (isPreludeDone()) {
+      hintActionBtn.textContent = 'פתחי את המסע ←';
+      hintActionBtn.href = STORY.link;
+      hintActionBtn.onclick = null;
+    } else {
+      hintActionBtn.textContent = 'אני מוכנה... קחי אותי להקדמה ←';
+      hintActionBtn.removeAttribute('href');
+      hintActionBtn.onclick = function (e) { e.preventDefault(); openPrelude(); };
+    }
   }
 
   function openHint(dateStr) {
