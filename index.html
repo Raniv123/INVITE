@@ -336,7 +336,7 @@ a { color: inherit; text-decoration: none; }
   height: 34px;
   transform: translate(-50%, -50%);
   z-index: 4;
-  filter: drop-shadow(0 0 14px rgba(236,72,153,0.55));
+  filter: drop-shadow(0 0 14px rgba(239,68,68,0.6));
 }
 .wax-seal::before,
 .wax-seal::after {
@@ -344,10 +344,11 @@ a { color: inherit; text-decoration: none; }
   position: absolute;
   width: 18px;
   height: 28px;
-  background: linear-gradient(160deg, #E879F9 0%, #B42850 100%);
+  background: linear-gradient(160deg, #EF4444 0%, #DC2626 100%);
   border-radius: 18px 18px 0 0;
   top: 0;
 }
+.heart-icon { color: #EF4444; }
 .wax-seal::before { left: 8px; transform: rotate(-45deg); transform-origin: 0 100%; }
 .wax-seal::after { right: 8px; transform: rotate(45deg); transform-origin: 100% 100%; }
 
@@ -728,6 +729,8 @@ a { color: inherit; text-decoration: none; }
       פתחי את המסע ←
     </a>
 
+    <button type="button" class="secondary-btn" id="hintCalBtn">הוסיפי ליומן 📅</button>
+
     <button type="button" class="secondary-btn" id="hintCloseBtn2">סגרי, אחזור אליי כשיגיע הזמן</button>
   </div>
 </div>
@@ -747,7 +750,7 @@ a { color: inherit; text-decoration: none; }
       </div>
       <p class="hint-text word-appear" style="animation-delay:.05s">זה יהיה הערב שלך?</p>
       <div class="confirm-actions">
-        <button type="button" class="action-btn word-appear" id="confirmYesBtn" style="animation-delay:.15s">בחרתי ♡</button>
+        <button type="button" class="action-btn word-appear" id="confirmYesBtn" style="animation-delay:.15s">בחרתי <span class="heart-icon">♡</span></button>
         <button type="button" class="secondary-btn" id="confirmNoBtn">עוד רגע, אסתכל שוב</button>
       </div>
     </div>
@@ -755,6 +758,7 @@ a { color: inherit; text-decoration: none; }
     <div id="confirmCelebrate" class="view-hidden confirm-phase">
       <p class="hint-text word-appear">נבחר 💜 הוא כבר רואה את זה...</p>
       <p class="hint-text word-appear" style="animation-delay:.15s">כשהוא יאשר — יחכה לך כאן הרמז הראשון.</p>
+      <button type="button" class="secondary-btn" id="confirmCalBtn">הוסיפי ליומן 📅</button>
       <button type="button" class="secondary-btn" id="confirmDoneBtn">סגרי</button>
     </div>
   </div>
@@ -784,7 +788,7 @@ a { color: inherit; text-decoration: none; }
       <div class="glass partner-card">
         <p class="word-appear">היא בחרה:</p>
         <p class="partner-date-line word-appear" id="partnerDateLine" style="animation-delay:.1s"></p>
-        <button type="button" class="action-btn word-appear" id="partnerAckBtn" style="animation-delay:.2s">אשר לה ♡</button>
+        <button type="button" class="action-btn word-appear" id="partnerAckBtn" style="animation-delay:.2s">אשר לה <span class="heart-icon">♡</span></button>
         <p class="partner-sub word-appear" style="animation-delay:.3s">האישור ישחרר אצלה את הרמז הראשון</p>
       </div>
     </div>
@@ -793,6 +797,7 @@ a { color: inherit; text-decoration: none; }
       <div class="glass partner-card">
         <p class="word-appear">אושר. הרמז הראשון בדרך אליה ✨</p>
         <p class="partner-date-line word-appear" id="partnerAckedDateLine" style="animation-delay:.1s"></p>
+        <button type="button" class="secondary-btn word-appear" id="partnerCalBtn" style="animation-delay:.2s">הוסף ליומן 📅</button>
       </div>
     </div>
 
@@ -820,7 +825,7 @@ a { color: inherit; text-decoration: none; }
     <div id="preludeDress" class="partner-phase view-hidden">
       <div class="glass partner-card screen-fade">
         <p class="word-appear">עכשיו לכי תתלבשי במשהו שגורם לך להרגיש יפה.<br>תתבשמי בנקודה שאת רוצה שיתקרבו אליה.<br>וכשאת מוכנה באמת — חזרי אליי.</p>
-        <button type="button" class="action-btn word-appear" id="preludeDressBtn" style="animation-delay:.15s">אני מוכנה ♡</button>
+        <button type="button" class="action-btn word-appear" id="preludeDressBtn" style="animation-delay:.15s">אני מוכנה <span class="heart-icon">♡</span></button>
       </div>
     </div>
 
@@ -963,6 +968,24 @@ a { color: inherit; text-decoration: none; }
     const d = new Date(dateStr + 'T00:00:00');
     return HEBREW_WEEKDAYS_FULL[d.getDay()] + ', ' + d.getDate() + ' ב' + HEBREW_MONTHS[d.getMonth()];
   }
+  // ICS client-only: 20:00-23:00 באותו יום, בלי מיקום, בלי לחשוף תוכן
+  function downloadICS(dateStr) {
+    const d = dateStr.replace(/-/g, '');
+    const ics = [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//invite//he', 'BEGIN:VEVENT',
+      'DTSTART;TZID=Asia/Jerusalem:' + d + 'T200000',
+      'DTEND;TZID=Asia/Jerusalem:' + d + 'T230000',
+      'SUMMARY:ערב שלנו 🤍',
+      'DESCRIPTION:...',
+      'END:VEVENT', 'END:VCALENDAR',
+    ].join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+    a.download = 'הערב-שלנו.ics';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
   function isAcked() {
     if (localStorage.getItem(ACK_KEY) === '1') return true;
     const chosenTs = Number(localStorage.getItem(CHOSEN_TS_KEY) || 0);
@@ -1150,6 +1173,9 @@ a { color: inherit; text-decoration: none; }
   confirmDoneBtn.addEventListener('click', function () {
     closeConfirm();
     renderCalendar();
+  });
+  document.getElementById('confirmCalBtn').addEventListener('click', function () {
+    downloadICS(pendingDate);
   });
 
   /* ---------- מודאל רמז ---------- */
@@ -1362,6 +1388,9 @@ a { color: inherit; text-decoration: none; }
 
   closeBtn1.addEventListener('click', closeHint);
   closeBtn2.addEventListener('click', closeHint);
+  document.getElementById('hintCalBtn').addEventListener('click', function () {
+    if (activeDate) downloadICS(activeDate);
+  });
   overlay.addEventListener('click', function (e) { if (e.target === overlay) closeHint(); });
 
   // חצות עברה בזמן שהטאב היה ברקע? לרענן לוח + כרטיס פתוח (אם יש)
@@ -1455,6 +1484,9 @@ a { color: inherit; text-decoration: none; }
       localStorage.setItem(ACK_KEY, '1');
       partnerAckedDateLine.textContent = formatChosenLine(foundDate);
       showPartnerPhase(partnerAckedScreen);
+    });
+    document.getElementById('partnerCalBtn').addEventListener('click', function () {
+      if (foundDate) downloadICS(foundDate);
     });
 
     if (localStorage.getItem(PARTNER_VERIFIED_KEY) === '1') {
