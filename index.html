@@ -513,6 +513,33 @@ a { color: inherit; text-decoration: none; }
 .hint-date .weekday { font-size: 0.85rem; font-weight: 300; color: rgba(245,245,247,0.5); }
 .hint-date .full-date { font-size: 1.35rem; font-weight: 400; }
 
+.hint-image-wrap {
+  position: relative;
+  width: calc(100% + 3.2rem);
+  height: 180px;
+  margin: -2rem -1.6rem 0;
+  overflow: hidden;
+  border-radius: 22px 22px 0 0;
+}
+.hint-image-wrap.view-hidden { display: none !important; }
+.hint-image-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 45%, rgba(8,6,16,0.9) 100%);
+  pointer-events: none;
+}
+.hint-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.6s ease, filter 0.8s ease, transform 0.8s ease;
+}
+.hint-image.is-loaded { opacity: 1; }
+.hint-image.is-locked { filter: blur(30px); transform: scale(1.15); }
+
 .confirm-phase { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; width: 100%; }
 .confirm-actions { display: flex; flex-direction: column; align-items: center; gap: 0.85rem; margin-top: 0.6rem; width: 100%; }
 
@@ -678,6 +705,10 @@ a { color: inherit; text-decoration: none; }
 <!-- ============ מודאל רמז ============ -->
 <div id="hint-overlay" class="view-hidden" role="dialog" aria-modal="true" aria-labelledby="hintDate">
   <div class="hint-card glass" id="hintCard" tabindex="-1">
+    <div class="hint-image-wrap view-hidden" id="hintImageWrap">
+      <img class="hint-image" id="hintImage" alt="" loading="lazy">
+    </div>
+
     <button type="button" class="hint-close" id="hintCloseBtn" aria-label="סגירה">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
@@ -1191,6 +1222,27 @@ a { color: inherit; text-decoration: none; }
   const daysLbl = document.getElementById('daysLbl');
   const closeBtn1 = document.getElementById('hintCloseBtn');
   const closeBtn2 = document.getElementById('hintCloseBtn2');
+  const hintImageWrap = document.getElementById('hintImageWrap');
+  const hintImage = document.getElementById('hintImage');
+  hintImage.addEventListener('load', function () { hintImage.classList.add('is-loaded'); });
+
+  const HINT_IMAGES = {
+    far: 'hint-images/hint-far.jpg',
+    near: 'hint-images/hint-near.jpg',
+    dayBefore: 'hint-images/hint-daybefore.jpg',
+    today: 'hint-images/hint-today.jpg',
+  };
+  function updateHintImage(stage, locked) {
+    if (stage === 'past') { hintImageWrap.classList.add('view-hidden'); return; }
+    hintImageWrap.classList.remove('view-hidden');
+    const src = HINT_IMAGES[stage];
+    if (hintImage.dataset.src !== src) {
+      hintImage.dataset.src = src;
+      hintImage.classList.remove('is-loaded');
+      hintImage.src = src;
+    }
+    hintImage.classList.toggle('is-locked', locked);
+  }
 
   const STAGE_LABELS = { far: 'עוד זמן', near: 'מתקרב', dayBefore: 'מחר', today: 'היום!', past: 'היה' };
   const PAST_TEXT = 'הערב הזה כבר היה שלנו 💜';
@@ -1232,6 +1284,7 @@ a { color: inherit; text-decoration: none; }
     activeStage = stage;
     const locked = stage !== 'past' && !isAcked() && !previewStage;
     hintWasLocked = locked;
+    updateHintImage(stage, locked);
 
     hintStageTag.textContent = locked ? MYSTERY_TAG : STAGE_LABELS[stage];
     hintText.textContent = locked
