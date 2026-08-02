@@ -467,6 +467,9 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  padding-top: calc(1.5rem + env(safe-area-inset-top));
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  overflow-y: auto;
   background: rgba(4, 3, 10, 0.72);
   backdrop-filter: blur(6px);
 }
@@ -475,6 +478,8 @@ a { color: inherit; text-decoration: none; }
 .hint-card {
   width: 100%;
   max-width: 380px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   padding: 2rem 1.6rem 1.9rem;
   display: flex;
   flex-direction: column;
@@ -881,6 +886,15 @@ a { color: inherit; text-decoration: none; }
   const ACK_KEY = 'invite-ack';
   const PARTNER_VERIFIED_KEY = 'invite-partner-verified';
   const PRELUDE_KEY = 'invite-prelude-step';
+  const PENDING_KEY = 'invite-sync-pending';
+
+  // ponytail: localStorage can throw (Safari private mode, quota) — wrapper falls back to in-memory
+  const memStore = {};
+  const store = {
+    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return (k in memStore) ? memStore[k] : null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { memStore[k] = v; } },
+    remove: function (k) { try { localStorage.removeItem(k); } catch (e) { delete memStore[k]; } },
+  };
 
   const params = new URLSearchParams(location.search);
   const ALLOWED_PREVIEW = new Set(['far', 'near', 'dayBefore', 'today']);
@@ -889,11 +903,12 @@ a { color: inherit; text-decoration: none; }
 
   // כלי לרן: ?reset=1 מוחק את כל המצב השמור (בדיקות בלבד) — שני הצדדים
   if (params.get('reset') === '1') {
-    localStorage.removeItem(CHOSEN_KEY);
-    localStorage.removeItem(CHOSEN_TS_KEY);
-    localStorage.removeItem(ACK_KEY);
-    localStorage.removeItem(PARTNER_VERIFIED_KEY);
-    localStorage.removeItem(PRELUDE_KEY);
+    store.remove(CHOSEN_KEY);
+    store.remove(CHOSEN_TS_KEY);
+    store.remove(ACK_KEY);
+    store.remove(PARTNER_VERIFIED_KEY);
+    store.remove(PRELUDE_KEY);
+    store.remove(PENDING_KEY);
     params.delete('reset');
     const cleanQuery = params.toString();
     history.replaceState(null, '', location.pathname + (cleanQuery ? '?' + cleanQuery : '') + location.hash);
@@ -906,6 +921,7 @@ a { color: inherit; text-decoration: none; }
     const listeners = [];
     let timer = null;
     let active = false;
+    let inFlight = false;
 
     function isValidDate(d) {
       return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && CANDIDATE_DATES.indexOf(d) !== -1;
@@ -917,10 +933,36 @@ a { color: inherit; text-decoration: none; }
       return msg;
     }
 
+    function loadPending() {
+      try { return JSON.parse(store.get(PENDING_KEY) || '[]'); } catch (e) { return []; }
+    }
+    function savePending(arr) { store.set(PENDING_KEY, JSON.stringify(arr)); }
+
+    function sendMessage(msg) {
+      return fetch(NTFY_BASE, { method: 'POST', body: JSON.stringify(msg) })
+        .then(function (r) { return !!r.ok; })
+        .catch(function () { return false; });
+    }
+
+    // retries queued messages that failed to leave the device (item 03)
+    function flushPending() {
+      const pending = loadPending();
+      if (!pending.length) return;
+      Promise.all(pending.map(function (msg) {
+        return sendMessage(msg).then(function (ok) { return { msg: msg, ok: ok }; });
+      })).then(function (results) {
+        savePending(results.filter(function (r) { return !r.ok; }).map(function (r) { return r.msg; }));
+      });
+    }
+
     function poll() {
+      if (inFlight) return; // item 02: prevent overlapping polls
+      inFlight = true;
+      flushPending();
       fetch(NTFY_BASE + '/json?poll=1&since=all')
         .then(function (r) { return r.text(); })
         .then(function (text) {
+          const valid = [];
           text.split('\n').forEach(function (line) {
             line = line.trim();
             if (!line) return;
@@ -933,12 +975,16 @@ a { color: inherit; text-decoration: none; }
             }
             let inner;
             try { inner = JSON.parse(outer.message); } catch (e) { return; }
-            const valid = validate(inner);
-            if (!valid) return;
-            listeners.forEach(function (fn) { fn(valid); });
+            const msg = validate(inner);
+            if (!msg) return;
+            valid.push(msg);
           });
+          // item 02: dispatch in chronological order so the latest CHOSE/ACK wins
+          valid.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+          valid.forEach(function (msg) { listeners.forEach(function (fn) { fn(msg); }); });
         })
-        .catch(function () {});
+        .catch(function () {})
+        .then(function () { inFlight = false; });
     }
 
     function start() {
@@ -953,9 +999,10 @@ a { color: inherit; text-decoration: none; }
     }
 
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible') { if (listeners.length) start(); }
+      if (document.visibilityState === 'visible') { flushPending(); if (listeners.length) start(); }
       else stop();
     });
+    window.addEventListener('online', flushPending);
 
     return {
       subscribe: function (fn) {
@@ -963,18 +1010,22 @@ a { color: inherit; text-decoration: none; }
         if (document.visibilityState === 'visible') start();
       },
       publish: function (type, date) {
-        fetch(NTFY_BASE, {
-          method: 'POST',
-          body: JSON.stringify({ type: type, date: date, ts: Date.now() })
-        }).catch(function () {});
+        const msg = { type: type, date: date, ts: Date.now() };
+        sendMessage(msg).then(function (ok) {
+          if (!ok) {
+            const pending = loadPending();
+            pending.push(msg);
+            savePending(pending);
+          }
+        });
       }
     };
   })();
 
   // אם עוד לא נבחר יום אמיתי אבל יש ?preview — מעמידים פנים שהמועמד הראשון נבחר (נוחות בדיקה לרן, לא נשמר)
   function getChosenDate() {
-    const stored = localStorage.getItem(CHOSEN_KEY);
-    if (stored) return stored;
+    const stored = store.get(CHOSEN_KEY);
+    if (stored && CANDIDATE_DATES.indexOf(stored) !== -1) return stored; // item 09
     return previewStage ? CANDIDATE_DATES[0] : null;
   }
 
@@ -982,29 +1033,37 @@ a { color: inherit; text-decoration: none; }
     const d = new Date(dateStr + 'T00:00:00');
     return HEBREW_WEEKDAYS_FULL[d.getDay()] + ', ' + d.getDate() + ' ב' + HEBREW_MONTHS[d.getMonth()];
   }
-  // ICS client-only: 20:00-23:00 באותו יום, בלי מיקום, בלי לחשוף תוכן
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  // ICS client-only: מ-STORY.time עד 23:00 באותו יום, בלי מיקום, בלי לחשוף תוכן (item 05, 10)
   function downloadICS(dateStr) {
     const d = dateStr.replace(/-/g, '');
+    const timeParts = STORY.time.split(':');
+    const startH = pad2(timeParts[0]) + pad2(timeParts[1]) + '00';
+    const dtstamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const uid = 'invite-' + d + '@raniv123.github.io';
     const ics = [
       'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//invite//he', 'BEGIN:VEVENT',
-      'DTSTART;TZID=Asia/Jerusalem:' + d + 'T200000',
+      'UID:' + uid,
+      'DTSTAMP:' + dtstamp,
+      'DTSTART;TZID=Asia/Jerusalem:' + d + 'T' + startH,
       'DTEND;TZID=Asia/Jerusalem:' + d + 'T230000',
       'SUMMARY:ערב שלנו 🤍',
       'DESCRIPTION:...',
       'END:VEVENT', 'END:VCALENDAR',
     ].join('\r\n');
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+    a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
     a.download = 'הערב-שלנו.ics';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(a.href);
+    setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 0);
   }
 
   function isAcked() {
-    if (localStorage.getItem(ACK_KEY) === '1') return true;
-    const chosenTs = Number(localStorage.getItem(CHOSEN_TS_KEY) || 0);
+    if (store.get(ACK_KEY) === '1') return true;
+    const chosenTs = Number(store.get(CHOSEN_TS_KEY) || 0);
     if (chosenTs && (Date.now() - chosenTs) > 86400000) {
-      localStorage.setItem(ACK_KEY, '1'); // fallback: 24 שעות עברו בלי ACK ברשת — משחררים
+      store.set(ACK_KEY, '1'); // fallback: 24 שעות עברו בלי ACK ברשת — משחררים
       return true;
     }
     return false;
@@ -1169,6 +1228,7 @@ a { color: inherit; text-decoration: none; }
   let confirmLastFocused = null;
 
   function openConfirm(dateStr) {
+    if (getChosenDate()) { openHint(getChosenDate()); return; } // item 04: no second choice
     confirmLastFocused = document.activeElement;
     pendingDate = dateStr;
     confirmDateLine.textContent = formatChosenLine(dateStr);
@@ -1190,12 +1250,13 @@ a { color: inherit; text-decoration: none; }
   confirmOverlay.addEventListener('click', function (e) { if (e.target === confirmOverlay) closeConfirm(); });
 
   confirmYesBtn.addEventListener('click', function () {
-    localStorage.setItem(CHOSEN_KEY, pendingDate);
-    localStorage.setItem(CHOSEN_TS_KEY, String(Date.now()));
+    store.set(CHOSEN_KEY, pendingDate);
+    store.set(CHOSEN_TS_KEY, String(Date.now()));
     SyncBus.publish('CHOSE', pendingDate);
     confirmQuestion.classList.add('view-hidden');
     confirmCelebrate.classList.remove('view-hidden');
     spawnCelebrationBurst();
+    renderCalendar(); // item 04: reflect the lock immediately, no second date pickable
   });
   confirmDoneBtn.addEventListener('click', function () {
     closeConfirm();
@@ -1225,6 +1286,7 @@ a { color: inherit; text-decoration: none; }
   const hintImageWrap = document.getElementById('hintImageWrap');
   const hintImage = document.getElementById('hintImage');
   hintImage.addEventListener('load', function () { hintImage.classList.add('is-loaded'); });
+  hintImage.addEventListener('error', function () { hintImageWrap.classList.add('view-hidden'); }); // item 12
 
   const HINT_IMAGES = {
     far: 'hint-images/hint-far.jpg',
@@ -1254,15 +1316,17 @@ a { color: inherit; text-decoration: none; }
   let activeStage = null;
   let hintWasLocked = false;
 
-  // מאזין ל-ACK לאורך כל חיי העמוד — כדי לשחרר רמז גם אם הכרטיס לא פתוח כרגע
-  const chosenForAck = getChosenDate();
-  if (chosenForAck && !isAcked()) {
+  // מאזין ל-ACK לאורך כל חיי העמוד — כדי לשחרר רמז גם אם הכרטיס לא פתוח כרגע.
+  // נרשם תמיד (item 01): קריאת הבחירה הנוכחית קורית בתוך ה-callback, לא ב-capture בזמן הרשמה,
+  // כדי לתפוס גם בחירה שנעשתה מאוחר יותר באותו סשן. preview לא נרשם כלל (item 07).
+  if (!previewStage) {
     SyncBus.subscribe(function (msg) {
-      if (msg.type === 'ACK' && msg.date === chosenForAck) {
-        localStorage.setItem(ACK_KEY, '1');
-        if (overlay && !overlay.classList.contains('view-hidden') && activeDate === chosenForAck && hintWasLocked) {
-          revealHintNow();
-        }
+      if (msg.type !== 'ACK') return;
+      const currentChosen = getChosenDate();
+      if (!currentChosen || msg.date !== currentChosen || isAcked()) return;
+      store.set(ACK_KEY, '1');
+      if (overlay && !overlay.classList.contains('view-hidden') && activeDate === currentChosen && hintWasLocked) {
+        revealHintNow();
       }
     });
   }
@@ -1282,7 +1346,7 @@ a { color: inherit; text-decoration: none; }
 
   function applyStage(stage) {
     activeStage = stage;
-    const locked = stage !== 'past' && !isAcked() && !previewStage;
+    const locked = stage !== 'past' && !previewStage && !isAcked(); // item 07: skip isAcked() (has a write path) during preview
     hintWasLocked = locked;
     updateHintImage(stage, locked);
 
@@ -1332,15 +1396,15 @@ a { color: inherit; text-decoration: none; }
 
   function getPreludeStep() {
     if (isPreviewToday) return previewPreludeStep;
-    const v = localStorage.getItem(PRELUDE_KEY);
+    const v = store.get(PRELUDE_KEY);
     return v === 'done' ? 4 : (Number(v) || 1);
   }
   function setPreludeStep(step) {
     if (isPreviewToday) { previewPreludeStep = step; return; }
-    localStorage.setItem(PRELUDE_KEY, step === 4 ? 'done' : String(step));
+    store.set(PRELUDE_KEY, step === 4 ? 'done' : String(step));
   }
   function isPreludeDone() {
-    return isPreviewToday ? previewPreludeStep === 4 : localStorage.getItem(PRELUDE_KEY) === 'done';
+    return isPreviewToday ? previewPreludeStep === 4 : store.get(PRELUDE_KEY) === 'done';
   }
 
   function showPreludeStep(step) {
@@ -1398,8 +1462,13 @@ a { color: inherit; text-decoration: none; }
     function tick() {
       const realStage = getRealStage(dateStr);
       const stage = (previewStage && STORY.hints[previewStage]) ? previewStage : realStage;
-      if (stage !== activeStage) applyStage(stage);
-      if (stage === 'past') return;
+      // item 08: also re-check the lock (isAcked/fallback), not just the stage, on every tick
+      const lockedNow = stage !== 'past' && !previewStage && !isAcked();
+      if (stage !== activeStage || lockedNow !== hintWasLocked) applyStage(stage);
+      if (stage === 'past') {
+        if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; } // item 13
+        return;
+      }
 
       const now = new Date();
       let diff = Math.max(0, target.getTime() - now.getTime());
@@ -1486,7 +1555,7 @@ a { color: inherit; text-decoration: none; }
     function startPartnerFlow() {
       // כבר קיבל תשובה בעבר? מציגים ישירות
       const storedChose = getChosenDate();
-      if (localStorage.getItem(ACK_KEY) === '1' && storedChose) {
+      if (store.get(ACK_KEY) === '1' && storedChose) {
         foundDate = storedChose;
         partnerAckedDateLine.textContent = formatChosenLine(foundDate);
         showPartnerPhase(partnerAckedScreen);
@@ -1500,19 +1569,21 @@ a { color: inherit; text-decoration: none; }
         showPartnerPhase(partnerWaitingScreen);
       }
 
+      // item 02: SyncBus already delivers CHOSE messages in chronological order —
+      // always take the latest one instead of locking onto the first
       SyncBus.subscribe(function (msg) {
-        if (msg.type === 'CHOSE' && !foundDate) {
-          foundDate = msg.date;
-          partnerDateLine.textContent = formatChosenLine(foundDate);
-          showPartnerPhase(partnerFoundScreen);
-        }
+        if (msg.type !== 'CHOSE') return;
+        if (store.get(ACK_KEY) === '1') return; // already acked, don't reopen the question
+        foundDate = msg.date;
+        partnerDateLine.textContent = formatChosenLine(foundDate);
+        showPartnerPhase(partnerFoundScreen);
       });
     }
 
     function verifyPin() {
       const val = (pinInput.value || '').trim();
       if (val === PARTNER_CODE) {
-        localStorage.setItem(PARTNER_VERIFIED_KEY, '1');
+        store.set(PARTNER_VERIFIED_KEY, '1');
         startPartnerFlow();
       } else {
         pinInput.value = '';
@@ -1530,7 +1601,7 @@ a { color: inherit; text-decoration: none; }
     partnerAckBtn.addEventListener('click', function () {
       if (!foundDate) return;
       SyncBus.publish('ACK', foundDate);
-      localStorage.setItem(ACK_KEY, '1');
+      store.set(ACK_KEY, '1');
       partnerAckedDateLine.textContent = formatChosenLine(foundDate);
       showPartnerPhase(partnerAckedScreen);
     });
@@ -1538,7 +1609,7 @@ a { color: inherit; text-decoration: none; }
       if (foundDate) downloadICS(foundDate);
     });
 
-    if (localStorage.getItem(PARTNER_VERIFIED_KEY) === '1') {
+    if (store.get(PARTNER_VERIFIED_KEY) === '1') {
       startPartnerFlow();
     } else {
       showPartnerPhase(partnerPinScreen);
