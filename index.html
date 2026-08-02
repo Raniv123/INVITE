@@ -171,20 +171,6 @@ a { color: inherit; text-decoration: none; }
 }
 .secondary-btn:active { transform: translateY(0) scale(0.98); transition: transform 0.1s ease; }
 
-/* === כפתור וואטסאפ — ירוק עדין (זהה לרוח RRXO GiftBox) === */
-.wa-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5em;
-  background: rgba(37,211,102,0.12);
-  border-color: rgba(37,211,102,0.28);
-  color: rgba(120,230,170,0.95);
-}
-@media (hover: hover) and (pointer: fine) {
-  .wa-btn:hover { background: rgba(37,211,102,0.18); border-color: rgba(37,211,102,0.4); }
-}
-
 /* === אנימציית הופעה מהערפל === */
 .word-appear {
   animation: wordAppear 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -220,6 +206,26 @@ a { color: inherit; text-decoration: none; }
   0%, 100% { transform: scale(1); opacity: 0.55; }
   50% { transform: scale(1.18); opacity: 1; }
 }
+
+.shake-x { animation: shakeX 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes shakeX {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-9px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(5px); }
+}
+
+.mystery-dots { display: inline-flex; gap: 0.35rem; align-items: center; justify-content: center; }
+.mystery-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(236,114,249,0.6);
+  animation: breathPulse 1.6s ease-in-out infinite;
+}
+.mystery-dots span:nth-child(2) { animation-delay: 0.2s; }
+.mystery-dots span:nth-child(3) { animation-delay: 0.4s; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -590,6 +596,43 @@ a { color: inherit; text-decoration: none; }
   padding: 0.3rem 0.85rem;
 }
 
+/* === מסך צד-שני (#partner) === */
+#partner-view .stage { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; text-align: center; }
+.partner-phase { width: 100%; }
+.partner-card {
+  padding: 2.2rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.3rem;
+  text-align: center;
+}
+.partner-card h1 { font-size: clamp(1.4rem, 5.5vw, 1.75rem); font-weight: 300; }
+.partner-card p { font-size: 0.95rem; font-weight: 300; color: rgba(245,245,247,0.6); line-height: 1.7; }
+
+.pin-input {
+  width: 160px;
+  text-align: center;
+  font-size: 1.9rem;
+  font-weight: 400;
+  letter-spacing: 0.5em;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 0.75rem 0.5rem 0.75rem 1rem;
+}
+.pin-input:focus { border-color: rgba(236,114,249,0.5); }
+.pin-input::placeholder { color: rgba(245,245,247,0.2); letter-spacing: 0.5em; }
+
+.partner-date-line {
+  font-size: 1.4rem;
+  font-weight: 400;
+  color: #fff;
+}
+.partner-sub { font-size: 0.82rem !important; color: rgba(245,245,247,0.45) !important; }
+
 /* responsive: מסכים רחבים יותר */
 @media (min-width: 480px) {
   .stage { max-width: 400px; }
@@ -685,13 +728,6 @@ a { color: inherit; text-decoration: none; }
       פתחי את המסע ←
     </a>
 
-    <a href="#" class="secondary-btn wa-btn" id="hintWaBtn" target="_blank" rel="noopener noreferrer">
-      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M2.5 3.5A1.5 1.5 0 0 1 4 2h8a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 12 10H6.5L3.5 12.5V10H4A1.5 1.5 0 0 1 2.5 8.5v-5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-      </svg>
-      עדכני אותו בוואטסאפ
-    </a>
-
     <button type="button" class="secondary-btn" id="hintCloseBtn2">סגרי, אחזור אליי כשיגיע הזמן</button>
   </div>
 </div>
@@ -717,17 +753,51 @@ a { color: inherit; text-decoration: none; }
     </div>
 
     <div id="confirmCelebrate" class="view-hidden confirm-phase">
-      <p class="hint-text word-appear">נשמר. הוא כבר יודע.</p>
-      <a href="#" class="secondary-btn wa-btn" id="confirmWaBtn" target="_blank" rel="noopener noreferrer">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M2.5 3.5A1.5 1.5 0 0 1 4 2h8a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 12 10H6.5L3.5 12.5V10H4A1.5 1.5 0 0 1 2.5 8.5v-5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-        </svg>
-        עדכני אותו בוואטסאפ
-      </a>
+      <p class="hint-text word-appear">נבחר 💜 הוא כבר רואה את זה...</p>
+      <p class="hint-text word-appear" style="animation-delay:.15s">כשהוא יאשר — יחכה לך כאן הרמז הראשון.</p>
       <button type="button" class="secondary-btn" id="confirmDoneBtn">סגרי</button>
     </div>
   </div>
 </div>
+
+<!-- ============ מסך צד שני: #partner ============ -->
+<main id="partner-view" class="view view-hidden">
+  <div class="stage">
+
+    <div id="partnerPin" class="partner-phase">
+      <div class="glass partner-card" id="pinCard">
+        <h1 class="word-appear">קוד גישה</h1>
+        <p class="word-appear" style="animation-delay:.1s">משהו מיוחד מחכה לך כאן</p>
+        <input type="tel" inputmode="numeric" maxlength="4" id="pinInput" class="pin-input" autocomplete="off" placeholder="••••" dir="ltr" aria-label="קוד גישה בן 4 ספרות">
+        <button type="button" class="action-btn" id="pinSubmitBtn">כניסה</button>
+      </div>
+    </div>
+
+    <div id="partnerWaiting" class="partner-phase view-hidden">
+      <div class="glass partner-card">
+        <span class="mystery-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        <p class="word-appear">מחכה שהיא תבחר את הערב... 🌙</p>
+      </div>
+    </div>
+
+    <div id="partnerFound" class="partner-phase view-hidden">
+      <div class="glass partner-card">
+        <p class="word-appear">היא בחרה:</p>
+        <p class="partner-date-line word-appear" id="partnerDateLine" style="animation-delay:.1s"></p>
+        <button type="button" class="action-btn word-appear" id="partnerAckBtn" style="animation-delay:.2s">אשר לה ♡</button>
+        <p class="partner-sub word-appear" style="animation-delay:.3s">האישור ישחרר אצלה את הרמז הראשון</p>
+      </div>
+    </div>
+
+    <div id="partnerAcked" class="partner-phase view-hidden">
+      <div class="glass partner-card">
+        <p class="word-appear">אושר. הרמז הראשון בדרך אליה ✨</p>
+        <p class="partner-date-line word-appear" id="partnerAckedDateLine" style="animation-delay:.1s"></p>
+      </div>
+    </div>
+
+  </div>
+</main>
 
 <script>
 (function () {
@@ -753,19 +823,97 @@ a { color: inherit; text-decoration: none; }
   const HEBREW_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
   const HEBREW_WEEKDAYS_FULL = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','שבת'];
   const CHOSEN_KEY = 'invite-chosen-date';
+  const CHOSEN_TS_KEY = 'invite-chosen-ts';
+  const ACK_KEY = 'invite-ack';
+  const PARTNER_VERIFIED_KEY = 'invite-partner-verified';
 
   const params = new URLSearchParams(location.search);
   const ALLOWED_PREVIEW = new Set(['far', 'near', 'dayBefore', 'today']);
   const rawPreview = params.get('preview');
   const previewStage = ALLOWED_PREVIEW.has(rawPreview) ? rawPreview : null;
 
-  // כלי לרן: ?reset=1 מוחק את הבחירה השמורה (בדיקות בלבד)
+  // כלי לרן: ?reset=1 מוחק את כל המצב השמור (בדיקות בלבד) — שני הצדדים
   if (params.get('reset') === '1') {
     localStorage.removeItem(CHOSEN_KEY);
+    localStorage.removeItem(CHOSEN_TS_KEY);
+    localStorage.removeItem(ACK_KEY);
+    localStorage.removeItem(PARTNER_VERIFIED_KEY);
     params.delete('reset');
     const cleanQuery = params.toString();
     history.replaceState(null, '', location.pathname + (cleanQuery ? '?' + cleanQuery : '') + location.hash);
   }
+
+  /* ---------- ערוץ סנכרון — ntfy.sh, client-only, poller יחיד משותף ---------- */
+  const NTFY_BASE = 'https://ntfy.sh/invite-nx7k4qv92m-2026';
+  const SyncBus = (function () {
+    const seenIds = new Set();
+    const listeners = [];
+    let timer = null;
+    let active = false;
+
+    function isValidDate(d) {
+      return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && CANDIDATE_DATES.indexOf(d) !== -1;
+    }
+    function validate(msg) {
+      if (!msg || typeof msg !== 'object') return null;
+      if (msg.type !== 'CHOSE' && msg.type !== 'ACK') return null;
+      if (!isValidDate(msg.date)) return null;
+      return msg;
+    }
+
+    function poll() {
+      fetch(NTFY_BASE + '/json?poll=1&since=all')
+        .then(function (r) { return r.text(); })
+        .then(function (text) {
+          text.split('\n').forEach(function (line) {
+            line = line.trim();
+            if (!line) return;
+            let outer;
+            try { outer = JSON.parse(line); } catch (e) { return; }
+            if (!outer || !outer.message) return;
+            if (outer.id) {
+              if (seenIds.has(outer.id)) return;
+              seenIds.add(outer.id);
+            }
+            let inner;
+            try { inner = JSON.parse(outer.message); } catch (e) { return; }
+            const valid = validate(inner);
+            if (!valid) return;
+            listeners.forEach(function (fn) { fn(valid); });
+          });
+        })
+        .catch(function () {});
+    }
+
+    function start() {
+      if (active) return;
+      active = true;
+      poll();
+      timer = setInterval(poll, 8000);
+    }
+    function stop() {
+      active = false;
+      if (timer) { clearInterval(timer); timer = null; }
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') { if (listeners.length) start(); }
+      else stop();
+    });
+
+    return {
+      subscribe: function (fn) {
+        listeners.push(fn);
+        if (document.visibilityState === 'visible') start();
+      },
+      publish: function (type, date) {
+        fetch(NTFY_BASE, {
+          method: 'POST',
+          body: JSON.stringify({ type: type, date: date, ts: Date.now() })
+        }).catch(function () {});
+      }
+    };
+  })();
 
   // אם עוד לא נבחר יום אמיתי אבל יש ?preview — מעמידים פנים שהמועמד הראשון נבחר (נוחות בדיקה לרן, לא נשמר)
   function getChosenDate() {
@@ -778,8 +926,14 @@ a { color: inherit; text-decoration: none; }
     const d = new Date(dateStr + 'T00:00:00');
     return HEBREW_WEEKDAYS_FULL[d.getDay()] + ', ' + d.getDate() + ' ב' + HEBREW_MONTHS[d.getMonth()];
   }
-  function whatsappHref(dateStr) {
-    return 'https://wa.me/?text=' + encodeURIComponent('בחרתי. ' + formatChosenLine(dateStr) + '. 💜');
+  function isAcked() {
+    if (localStorage.getItem(ACK_KEY) === '1') return true;
+    const chosenTs = Number(localStorage.getItem(CHOSEN_TS_KEY) || 0);
+    if (chosenTs && (Date.now() - chosenTs) > 86400000) {
+      localStorage.setItem(ACK_KEY, '1'); // fallback: 24 שעות עברו בלי ACK ברשת — משחררים
+      return true;
+    }
+    return false;
   }
 
   /* ---------- פרטיקלים ---------- */
@@ -922,7 +1076,6 @@ a { color: inherit; text-decoration: none; }
   const confirmYesBtn = document.getElementById('confirmYesBtn');
   const confirmNoBtn = document.getElementById('confirmNoBtn');
   const confirmCloseBtn = document.getElementById('confirmCloseBtn');
-  const confirmWaBtn = document.getElementById('confirmWaBtn');
   const confirmDoneBtn = document.getElementById('confirmDoneBtn');
 
   let pendingDate = null;
@@ -951,7 +1104,8 @@ a { color: inherit; text-decoration: none; }
 
   confirmYesBtn.addEventListener('click', function () {
     localStorage.setItem(CHOSEN_KEY, pendingDate);
-    confirmWaBtn.href = whatsappHref(pendingDate);
+    localStorage.setItem(CHOSEN_TS_KEY, String(Date.now()));
+    SyncBus.publish('CHOSE', pendingDate);
     confirmQuestion.classList.add('view-hidden');
     confirmCelebrate.classList.remove('view-hidden');
     spawnCelebrationBurst();
@@ -969,7 +1123,6 @@ a { color: inherit; text-decoration: none; }
   const hintText = document.getElementById('hintText');
   const hintStageTag = document.getElementById('hintStageTag');
   const hintActionBtn = document.getElementById('hintActionBtn');
-  const hintWaBtn = document.getElementById('hintWaBtn');
   const cdDays = document.getElementById('cdDays');
   const cdHours = document.getElementById('cdHours');
   const cdMinutes = document.getElementById('cdMinutes');
@@ -982,10 +1135,26 @@ a { color: inherit; text-decoration: none; }
 
   const STAGE_LABELS = { far: 'עוד זמן', near: 'מתקרב', dayBefore: 'מחר', today: 'היום!', past: 'היה' };
   const PAST_TEXT = 'הערב הזה כבר היה שלנו 💜';
+  const MYSTERY_TAG = 'בדרך';
+  const MYSTERY_TEXT = '...הרמז בדרך אליך 🌙';
   let countdownInterval = null;
   let lastFocused = null;
   let activeDate = null;
   let activeStage = null;
+  let hintWasLocked = false;
+
+  // מאזין ל-ACK לאורך כל חיי העמוד — כדי לשחרר רמז גם אם הכרטיס לא פתוח כרגע
+  const chosenForAck = getChosenDate();
+  if (chosenForAck && !isAcked()) {
+    SyncBus.subscribe(function (msg) {
+      if (msg.type === 'ACK' && msg.date === chosenForAck) {
+        localStorage.setItem(ACK_KEY, '1');
+        if (overlay && !overlay.classList.contains('view-hidden') && activeDate === chosenForAck && hintWasLocked) {
+          revealHintNow();
+        }
+      }
+    });
+  }
 
   // "היום" מחושב לפי לוח השנה של ישראל, לא אזור הזמן של המכשיר
   function getRealStage(eventDateStr) {
@@ -1002,10 +1171,15 @@ a { color: inherit; text-decoration: none; }
 
   function applyStage(stage) {
     activeStage = stage;
-    hintStageTag.textContent = STAGE_LABELS[stage];
-    hintText.textContent = stage === 'past' ? (STORY.hints.past || PAST_TEXT) : STORY.hints[stage];
+    const locked = stage !== 'past' && !isAcked();
+    hintWasLocked = locked;
 
-    if (stage === 'today') {
+    hintStageTag.textContent = locked ? MYSTERY_TAG : STAGE_LABELS[stage];
+    hintText.textContent = locked
+      ? MYSTERY_TEXT
+      : (stage === 'past' ? (STORY.hints.past || PAST_TEXT) : STORY.hints[stage]);
+
+    if (!locked && stage === 'today') {
       hintActionBtn.classList.remove('view-hidden');
       hintActionBtn.href = STORY.link;
     } else {
@@ -1014,8 +1188,23 @@ a { color: inherit; text-decoration: none; }
     }
 
     countdownHero.classList.toggle('view-hidden', stage === 'past');
-    daysCircle.classList.toggle('is-today', stage === 'today');
-    daysLbl.classList.toggle('view-hidden', stage === 'today');
+    daysCircle.classList.toggle('is-today', !locked && stage === 'today');
+    daysLbl.classList.toggle('view-hidden', !locked && stage === 'today');
+  }
+
+  // חשיפת הרמז ברגע שמגיע ACK בזמן שהכרטיס פתוח — word-appear + נצנוץ
+  function revealHintNow() {
+    hintWasLocked = false;
+    applyStage(activeStage);
+    hintText.classList.remove('word-appear');
+    void hintText.offsetWidth;
+    hintText.classList.add('word-appear');
+    if (hintActionBtn && !hintActionBtn.classList.contains('view-hidden')) {
+      hintActionBtn.classList.remove('word-appear');
+      void hintActionBtn.offsetWidth;
+      hintActionBtn.classList.add('word-appear');
+    }
+    spawnCelebrationBurst();
   }
 
   function openHint(dateStr) {
@@ -1027,7 +1216,6 @@ a { color: inherit; text-decoration: none; }
 
     hintWeekday.textContent = HEBREW_WEEKDAYS_FULL[eventDateOnly.getDay()];
     hintFullDate.textContent = eventDateOnly.getDate() + ' ב' + HEBREW_MONTHS[eventDateOnly.getMonth()] + ' ' + eventDateOnly.getFullYear();
-    hintWaBtn.href = whatsappHref(dateStr);
 
     function tick() {
       const realStage = getRealStage(dateStr);
@@ -1083,6 +1271,96 @@ a { color: inherit; text-decoration: none; }
       if (stage !== activeStage) applyStage(stage);
     }
   });
+
+  /* ============================================================
+     ---------- הצד שלו: #partner ----------
+     ============================================================ */
+  if (location.hash.replace('#', '') === 'partner') {
+    envelopeView.classList.add('view-hidden');
+    calendarView.classList.add('view-hidden');
+
+    const partnerView = document.getElementById('partner-view');
+    partnerView.classList.remove('view-hidden');
+
+    const pinCard = document.getElementById('pinCard');
+    const pinInput = document.getElementById('pinInput');
+    const pinSubmitBtn = document.getElementById('pinSubmitBtn');
+    const partnerPinScreen = document.getElementById('partnerPin');
+    const partnerWaitingScreen = document.getElementById('partnerWaiting');
+    const partnerFoundScreen = document.getElementById('partnerFound');
+    const partnerAckedScreen = document.getElementById('partnerAcked');
+    const partnerDateLine = document.getElementById('partnerDateLine');
+    const partnerAckedDateLine = document.getElementById('partnerAckedDateLine');
+    const partnerAckBtn = document.getElementById('partnerAckBtn');
+
+    const PARTNER_CODE = '6262';
+    let foundDate = null;
+
+    function showPartnerPhase(el) {
+      [partnerPinScreen, partnerWaitingScreen, partnerFoundScreen, partnerAckedScreen].forEach(function (s) {
+        s.classList.toggle('view-hidden', s !== el);
+      });
+    }
+
+    function startPartnerFlow() {
+      // כבר קיבל תשובה בעבר? מציגים ישירות
+      const storedChose = getChosenDate();
+      if (localStorage.getItem(ACK_KEY) === '1' && storedChose) {
+        foundDate = storedChose;
+        partnerAckedDateLine.textContent = formatChosenLine(foundDate);
+        showPartnerPhase(partnerAckedScreen);
+        return;
+      }
+      if (storedChose) {
+        foundDate = storedChose;
+        partnerDateLine.textContent = formatChosenLine(foundDate);
+        showPartnerPhase(partnerFoundScreen);
+      } else {
+        showPartnerPhase(partnerWaitingScreen);
+      }
+
+      SyncBus.subscribe(function (msg) {
+        if (msg.type === 'CHOSE' && !foundDate) {
+          foundDate = msg.date;
+          partnerDateLine.textContent = formatChosenLine(foundDate);
+          showPartnerPhase(partnerFoundScreen);
+        }
+      });
+    }
+
+    function verifyPin() {
+      const val = (pinInput.value || '').trim();
+      if (val === PARTNER_CODE) {
+        localStorage.setItem(PARTNER_VERIFIED_KEY, '1');
+        startPartnerFlow();
+      } else {
+        pinInput.value = '';
+        pinInput.focus();
+        pinCard.classList.remove('shake-x');
+        void pinCard.offsetWidth;
+        pinCard.classList.add('shake-x');
+      }
+    }
+
+    pinSubmitBtn.addEventListener('click', verifyPin);
+    pinInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') verifyPin(); });
+    pinCard.addEventListener('animationend', function () { pinCard.classList.remove('shake-x'); });
+
+    partnerAckBtn.addEventListener('click', function () {
+      if (!foundDate) return;
+      SyncBus.publish('ACK', foundDate);
+      localStorage.setItem(ACK_KEY, '1');
+      partnerAckedDateLine.textContent = formatChosenLine(foundDate);
+      showPartnerPhase(partnerAckedScreen);
+    });
+
+    if (localStorage.getItem(PARTNER_VERIFIED_KEY) === '1') {
+      startPartnerFlow();
+    } else {
+      showPartnerPhase(partnerPinScreen);
+      pinInput.focus();
+    }
+  }
 
 })();
 </script>
