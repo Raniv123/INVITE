@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הזמנה אישית — צילומי מסך</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0812; color:#fff; font-family:'Segoe UI',Arial,sans-serif; min-height:100vh; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; background:rgba(255,255,255,0.04); border-block-end:1px solid rgba(255,255,255,0.08); }
+  h1 { font-size:17px; font-weight:600; }
+  .btn { background:rgba(168,85,247,0.18); border:1px solid rgba(168,85,247,0.4); color:#e9d5ff; padding:8px 16px; border-radius:10px; cursor:pointer; font-size:14px; }
+  .btn:hover { background:rgba(168,85,247,0.3); }
+  /* single view */
+  #single { display:flex; align-items:center; justify-content:center; gap:18px; padding:20px; min-height:calc(100vh - 60px); }
+  #single img { max-height:82vh; max-width:60vw; border-radius:14px; box-shadow:0 10px 50px rgba(0,0,0,0.6); }
+  .nav { font-size:34px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#fff; width:56px; height:56px; border-radius:50%; cursor:pointer; }
+  .nav:hover { background:rgba(236,72,153,0.25); }
+  .caption { text-align:center; margin-block-start:10px; color:rgba(255,255,255,0.65); font-size:14px; }
+  /* grid view */
+  #grid { display:none; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; padding:22px; }
+  #grid figure { cursor:pointer; }
+  #grid img { width:100%; border-radius:12px; border:1px solid rgba(255,255,255,0.08); }
+  #grid img:hover { border-color:rgba(236,72,153,0.5); }
+  #grid figcaption { font-size:13px; color:rgba(255,255,255,0.6); margin-block-start:6px; text-align:center; }
+  .counter { color:rgba(255,255,255,0.45); font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>הזמנה אישית — כל המסכים</h1>
+  <span class="counter" id="counter"></span>
+  <button class="btn" id="toggle">🔳 גריד</button>
+</header>
+
+<div id="single">
+  <!-- RTL: אחורה = חץ ימינה, קדימה = חץ שמאלה -->
+  <button class="nav" id="prev" title="הקודם">‹</button>
+  <div>
+    <img id="mainImg" src="" alt="">
+    <div class="caption" id="cap"></div>
+  </div>
+  <button class="nav" id="next" title="הבא">›</button>
+</div>
+
+<div id="grid"></div>
+
+<script>
+const IMAGES = [
+  ['01-envelope.png','מעטפה — המסך הראשון שלה'],
+  ['02-calendar.png','לוח שנה — גרסה ראשונה'],
+  ['06-pick.png','בחירת ערב — שלושת המועמדים זוהרים'],
+  ['07-confirm.png','כרטיס אישור — "זה יהיה הערב שלך?"'],
+  ['08-chosen.png','אחרי בחירה — עיגול ימים + שעון'],
+  ['09-her-waiting.png','אצלה — ממתינה לרמז (עד שהוא מאשר)'],
+  ['10-partner-pin.png','אצלו — קוד גישה 6262'],
+  ['11-partner-chose.png','אצלו — "היא בחרה" + כפתור אישור'],
+  ['04-hint-today-v2.png','ביום עצמו — כפתור המסע'],
+  ['05-hint-daybefore-v2.png','יום לפני — רמז לוהט'],
+];
+let idx = 0, gridMode = false;
+const mainImg = document.getElementById('mainImg'), cap = document.getElementById('cap'),
+      counter = document.getElementById('counter'), single = document.getElementById('single'),
+      grid = document.getElementById('grid');
+
+function show(i) {
+  idx = (i + IMAGES.length) % IMAGES.length;
+  mainImg.src = IMAGES[idx][0];
+  mainImg.alt = cap.textContent = IMAGES[idx][1];
+  counter.textContent = (idx + 1) + ' / ' + IMAGES.length;
+}
+// RTL: "הקודם" (prev) מוצג מימין, "הבא" (next) משמאל — כיוון קריאה עברי
+document.getElementById('prev').onclick = () => show(idx - 1);
+document.getElementById('next').onclick = () => show(idx + 1);
+document.addEventListener('keydown', e => {
+  if (gridMode) return;
+  if (e.key === 'ArrowRight') show(idx - 1);   // ימינה = אחורה
+  if (e.key === 'ArrowLeft') show(idx + 1);    // שמאלה = קדימה
+});
+document.getElementById('toggle').onclick = () => {
+  gridMode = !gridMode;
+  single.style.display = gridMode ? 'none' : 'flex';
+  grid.style.display = gridMode ? 'grid' : 'none';
+  document.getElementById('toggle').textContent = gridMode ? '🖼️ תמונה' : '🔳 גריד';
+};
+IMAGES.forEach(([src, label], i) => {
+  const f = document.createElement('figure');
+  f.innerHTML = `<img src="${src}" alt="${label}" loading="lazy"><figcaption>${label}</figcaption>`;
+  f.onclick = () => { document.getElementById('toggle').click(); show(i); };
+  grid.appendChild(f);
+});
+show(0);
+</script>
+</body>
+</html>
