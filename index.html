@@ -647,6 +647,14 @@ a { color: inherit; text-decoration: none; }
   white-space: pre-line;
 }
 
+.hint-next {
+  font-size: 0.78rem;
+  font-weight: 300;
+  line-height: 1.6;
+  color: rgba(245,245,247,0.45);
+  margin-top: -0.7rem;
+}
+
 .hint-stage-tag {
   font-size: 0.72rem;
   font-weight: 400;
@@ -786,6 +794,7 @@ a { color: inherit; text-decoration: none; }
     </div>
 
     <p class="hint-text word-appear" id="hintText" style="animation-delay:.1s"></p>
+    <p class="hint-next view-hidden word-appear" id="hintNext" style="animation-delay:.18s"></p>
 
     <a href="#" class="action-btn word-appear view-hidden" id="hintActionBtn" target="_blank" rel="noopener noreferrer" style="animation-delay:.25s">
       פתחי את המסע ←
@@ -899,11 +908,23 @@ a { color: inherit; text-decoration: none; }
 
   const HEBREW_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
   const HEBREW_WEEKDAYS_FULL = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','שבת'];
-  const CHOSEN_KEY = 'invite-chosen-date';
-  const CHOSEN_TS_KEY = 'invite-chosen-ts';
-  const ACK_KEY = 'invite-ack';
-  const PARTNER_VERIFIED_KEY = 'invite-partner-verified';
-  const PENDING_KEY = 'invite-sync-pending';
+  // מצב בדיקה (?test=1): ערוץ סנכרון נפרד + מרחב אחסון נפרד — בדיקות של רן לא נוגעות במצב האמיתי.
+  // הדגל שורד ניווט פנימי דרך sessionStorage (למשל מעבר ל-#partner או רענון בלי הפרמטר).
+  const TEST_FLAG = 'invite-test-mode';
+  const urlTest = new URLSearchParams(location.search).get('test') === '1';
+  let sessionTest = false;
+  try {
+    if (urlTest) sessionStorage.setItem(TEST_FLAG, '1');
+    sessionTest = sessionStorage.getItem(TEST_FLAG) === '1';
+  } catch (e) { sessionTest = urlTest; }
+  const IS_TEST = urlTest || sessionTest;
+  const KEY_PREFIX = IS_TEST ? 'invite-test-' : 'invite-';
+
+  const CHOSEN_KEY = KEY_PREFIX + 'chosen-date';
+  const CHOSEN_TS_KEY = KEY_PREFIX + 'chosen-ts';
+  const ACK_KEY = KEY_PREFIX + 'ack';
+  const PARTNER_VERIFIED_KEY = KEY_PREFIX + 'partner-verified';
+  const PENDING_KEY = KEY_PREFIX + 'sync-pending';
 
   // ponytail: localStorage can throw (Safari private mode, quota) — wrapper falls back to in-memory
   const memStore = {};
@@ -930,8 +951,21 @@ a { color: inherit; text-decoration: none; }
     history.replaceState(null, '', location.pathname + (cleanQuery ? '?' + cleanQuery : '') + location.hash);
   }
 
+  // תגית דיסקרטית שרן תמיד ידע באיזה מצב הוא נמצא
+  if (IS_TEST) {
+    const badge = document.createElement('div');
+    badge.textContent = 'מצב בדיקה';
+    badge.style.cssText = 'position:fixed;top:8px;inset-inline-start:10px;z-index:99;font-size:11px;'
+      + 'padding:3px 10px;border-radius:999px;color:rgba(249,168,212,0.75);'
+      + 'background:rgba(236,72,153,0.12);border:1px solid rgba(236,72,153,0.3);pointer-events:none;';
+    document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(badge); });
+    if (document.body) document.body.appendChild(badge);
+  }
+
   /* ---------- ערוץ סנכרון — ntfy.sh, client-only, poller יחיד משותף ---------- */
-  const NTFY_BASE = 'https://ntfy.sh/invite-qt58wj3zr7-live';
+  const NTFY_BASE = IS_TEST
+    ? 'https://ntfy.sh/invite-qt58wj3zr7-test'
+    : 'https://ntfy.sh/invite-mk92xr4v8t-live';
   const SyncBus = (function () {
     const seenIds = new Set();
     const listeners = [];
@@ -1185,7 +1219,8 @@ a { color: inherit; text-decoration: none; }
     setTimeout(function () { envelopeView.dataset.phase = 'opened'; }, t1);
     setTimeout(function () {
       envelopeView.classList.add('view-hidden');
-      calendarView.classList.remove('view-hidden');
+      const chosen = getChosenDate();
+      if (chosen) { openHintPrimary(chosen); } else { calendarView.classList.remove('view-hidden'); }
     }, t2);
   });
 
@@ -1272,14 +1307,12 @@ a { color: inherit; text-decoration: none; }
   renderCalendar();
 
   // שחזור שקט בטעינה (רק בדף הראשי, לא בדף #partner — שם יש זרימת שחזור משלו).
-  // הלוח כבר מוצג עכשיו במצב ברירת-מחדל (סינכרוני, לא חסום); ה-fetch מעדכן אותו כשהוא מגיע, מהר או לא.
+  // אין עוד סיבה ללוח ברגע שיש בחירה; אם הלוח כבר גלוי כשהשחזור מגיע, מחליפים אותו ישר בכרטיס (item 03).
+  // אם עדיין על מסך המים (לא נגעה באור) — לא נוגעים בכלום; לחיצת האור בהמשך קוראת getChosenDate() טרי בעצמה.
   if (location.hash.replace('#', '') !== 'partner') {
     restoreFromNetwork().then(function (found) {
-      if (found) {
-        const anchor = new Date(getChosenDate() + 'T00:00:00');
-        viewYear = anchor.getFullYear();
-        viewMonth = anchor.getMonth();
-        renderCalendar();
+      if (found && !calendarView.classList.contains('view-hidden')) {
+        openHintPrimary(getChosenDate());
       }
       publishCurrentState();
     });
@@ -1334,8 +1367,7 @@ a { color: inherit; text-decoration: none; }
   }
   function closeVillaReveal() {
     villaView.classList.add('view-hidden');
-    calendarView.classList.remove('view-hidden');
-    renderCalendar();
+    openHintPrimary(pendingDate); // הלוח לא חוזר יותר ברגע שיש בחירה
   }
 
   confirmYesBtn.addEventListener('click', function () {
@@ -1367,6 +1399,7 @@ a { color: inherit; text-decoration: none; }
   const daysLbl = document.getElementById('daysLbl');
   const closeBtn1 = document.getElementById('hintCloseBtn');
   const closeBtn2 = document.getElementById('hintCloseBtn2');
+  const hintNext = document.getElementById('hintNext');
   const hintImageWrap = document.getElementById('hintImageWrap');
   const hintImage = document.getElementById('hintImage');
   hintImage.addEventListener('load', function () { hintImage.classList.add('is-loaded'); });
@@ -1387,11 +1420,20 @@ a { color: inherit; text-decoration: none; }
   const PAST_TEXT = 'הערב הזה כבר היה שלנו 💜';
   const MYSTERY_TAG = 'בדרך';
   const MYSTERY_TEXT = '...הרמז בדרך אליך 🌙';
+  const NEXT_HINT_LOCKED = 'הרמז הראשון בדרך אליך...';
+  const NEXT_HINT_LINES = {
+    far: 'הרמז הבא ייפתח מחר 🌙',
+    near: 'הרמז הבא ייפתח מחר 🌙',
+    dayBefore: 'מחר — היום שלכם. הרמז האחרון ייחשף בבוקר',
+    today: '',
+    past: '',
+  };
   let countdownInterval = null;
   let lastFocused = null;
   let activeDate = null;
   let activeStage = null;
   let hintWasLocked = false;
+  let hintPrimaryMode = false; // true = הכרטיס הוא המסך (אחרי שיש בחירה), בלי כפתורי סגירה
 
   // מאזין ל-ACK לאורך כל חיי העמוד — כדי לשחרר רמז גם אם הכרטיס לא פתוח כרגע.
   // נרשם תמיד (item 01): קריאת הבחירה הנוכחית קורית בתוך ה-callback, לא ב-capture בזמן הרשמה,
@@ -1432,6 +1474,10 @@ a { color: inherit; text-decoration: none; }
     hintText.textContent = locked
       ? MYSTERY_TEXT
       : (stage === 'past' ? (STORY.hints.past || PAST_TEXT) : STORY.hints[stage]);
+
+    const nextLine = locked ? NEXT_HINT_LOCKED : (NEXT_HINT_LINES[stage] || '');
+    hintNext.textContent = nextLine;
+    hintNext.classList.toggle('view-hidden', !nextLine);
 
     if (!locked && stage === 'today') {
       updateTodayCTA();
@@ -1508,12 +1554,23 @@ a { color: inherit; text-decoration: none; }
     countdownInterval = setInterval(tick, 1000);
     if (activeStage === 'past') { clearInterval(countdownInterval); countdownInterval = null; }
 
+    closeBtn1.classList.toggle('view-hidden', hintPrimaryMode);
+    closeBtn2.classList.toggle('view-hidden', hintPrimaryMode);
+
     overlay.classList.remove('view-hidden');
     hintCard.focus();
-    document.addEventListener('keydown', onKeydown);
+    if (!hintPrimaryMode) document.addEventListener('keydown', onKeydown);
+  }
+
+  // הכרטיס הוא המסך עצמו — בלי לוח מאחוריו, בלי דרך חזרה (item 01+02 בבקשת רן)
+  function openHintPrimary(dateStr) {
+    calendarView.classList.add('view-hidden');
+    hintPrimaryMode = true;
+    openHint(dateStr);
   }
 
   function closeHint() {
+    if (hintPrimaryMode) return; // אין "סגירה" כשהכרטיס הוא כל המסך
     overlay.classList.add('view-hidden');
     if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
     document.removeEventListener('keydown', onKeydown);
