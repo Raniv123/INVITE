@@ -543,7 +543,50 @@ a { color: inherit; text-decoration: none; }
   transition: opacity 0.6s ease, filter 0.8s ease, transform 0.8s ease;
 }
 .hint-image.is-loaded { opacity: 1; }
-.hint-image.is-locked { filter: blur(30px); transform: scale(1.15); }
+
+/* === מסך חשיפת הווילה === */
+#villa-view { padding: 0; overflow: hidden; display: block; }
+.villa-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url('hint-images/villa.png');
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.32) blur(7px);
+  transform: scale(1.06);
+  transition: filter 3.4s cubic-bezier(0.16, 1, 0.3, 1), transform 3.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#villa-view[data-lit="1"] .villa-bg { filter: brightness(1) blur(0); transform: scale(1); }
+.villa-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to bottom, rgba(5,5,16,0.55) 0%, rgba(5,5,16,0.12) 35%, rgba(5,5,16,0.22) 58%, rgba(5,5,16,0.85) 100%);
+}
+.villa-content {
+  position: relative;
+  z-index: 2;
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  text-align: center;
+  padding: 2rem 1.5rem calc(2.5rem + env(safe-area-inset-bottom));
+}
+.villa-line { font-size: 1.05rem; font-weight: 300; color: rgba(245,245,247,0.85); }
+.villa-line-hero {
+  font-size: clamp(2rem, 9vw, 2.8rem);
+  font-weight: 400;
+  margin: 0.4rem 0;
+  color: #fff;
+  text-shadow: 0 0 40px rgba(255,205,130,0.5), 0 2px 20px rgba(0,0,0,0.5);
+}
+.villa-line-sub { font-size: 0.85rem; color: rgba(245,245,247,0.55); margin-bottom: 0.6rem; }
+.villa-actions { display: flex; flex-direction: column; gap: 0.7rem; align-items: center; margin-top: 0.8rem; }
 
 .confirm-phase { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; width: 100%; }
 .confirm-actions { display: flex; flex-direction: column; align-items: center; gap: 0.85rem; margin-top: 0.6rem; width: 100%; }
@@ -774,14 +817,24 @@ a { color: inherit; text-decoration: none; }
       </div>
     </div>
 
-    <div id="confirmCelebrate" class="view-hidden confirm-phase">
-      <p class="hint-text word-appear">נבחר 💜 הוא כבר רואה את זה...</p>
-      <p class="hint-text word-appear" style="animation-delay:.15s">כשהוא יאשר — יחכה לך כאן הרמז הראשון.</p>
-      <button type="button" class="secondary-btn" id="confirmCalBtn">הוסיפי ליומן 📅</button>
-      <button type="button" class="secondary-btn" id="confirmDoneBtn">סגרי</button>
-    </div>
   </div>
 </div>
+
+<!-- ============ מסך חשיפת הווילה (אחרי בחירת יום) ============ -->
+<main id="villa-view" class="view view-hidden">
+  <div class="villa-bg" id="villaBg" aria-hidden="true"></div>
+  <div class="villa-overlay" aria-hidden="true"></div>
+  <div class="villa-content">
+    <p class="villa-line word-appear" style="animation-delay:.1s">הזמנה מיוחדת.</p>
+    <p class="villa-line word-appear" style="animation-delay:.7s">למקום מיוחד בעולם.</p>
+    <p class="villa-line villa-line-hero word-appear" style="animation-delay:1.3s">וילה על המים.</p>
+    <p class="villa-line villa-line-sub word-appear" style="animation-delay:1.9s">התאריך נשמר. הוא כבר יודע.</p>
+    <div class="villa-actions word-appear" style="animation-delay:2.3s">
+      <button type="button" class="secondary-btn" id="villaCalBtn">הוסיפי ליומן 📅</button>
+      <button type="button" class="secondary-btn" id="villaCloseBtn">סגרי — נתראה שם ♡</button>
+    </div>
+  </div>
+</main>
 
 <!-- ============ מסך צד שני: #partner ============ -->
 <main id="partner-view" class="view view-hidden">
@@ -823,41 +876,6 @@ a { color: inherit; text-decoration: none; }
   </div>
 </main>
 
-<!-- ============ מסך טקס הקדמה (יום עצמו) ============ -->
-<main id="prelude-view" class="view view-hidden">
-  <div class="stage">
-
-    <div id="preludeWine" class="partner-phase">
-      <div class="glass partner-card screen-fade">
-        <p class="word-appear">קודם כל... מזגי לעצמך כוס יין.<br>לאט. בלי למהר. הערב הזה לא הולך לשום מקום.</p>
-        <button type="button" class="action-btn word-appear" id="preludeWineBtn" style="animation-delay:.15s">מזגתי 🍷</button>
-      </div>
-    </div>
-
-    <div id="preludeToast" class="partner-phase view-hidden">
-      <div class="glass partner-card screen-fade">
-        <p class="word-appear">הרימי כוסית. לחיינו.<br>לכל מה שעומד לקרות הערב...<br>לגימה אחת. עצמי עיניים. תני לחום להתפשט.</p>
-        <button type="button" class="action-btn word-appear" id="preludeToastBtn" style="animation-delay:.15s">לחיים 🥂</button>
-      </div>
-    </div>
-
-    <div id="preludeDress" class="partner-phase view-hidden">
-      <div class="glass partner-card screen-fade">
-        <p class="word-appear">עכשיו לכי תתלבשי במשהו שגורם לך להרגיש יפה.<br>תתבשמי בנקודה שאת רוצה שיתקרבו אליה.<br>וכשאת מוכנה באמת — חזרי אליי.</p>
-        <button type="button" class="action-btn word-appear" id="preludeDressBtn" style="animation-delay:.15s">אני מוכנה <span class="heart-icon">♡</span></button>
-      </div>
-    </div>
-
-    <div id="preludeFinal" class="partner-phase view-hidden">
-      <div class="glass partner-card screen-fade">
-        <p class="word-appear">את מושלמת.<br>קחי נשימה עמוקה אחת...<br>והיכנסי.</p>
-        <a href="#" class="action-btn word-appear" id="preludeFinalLink" target="_blank" rel="noopener noreferrer" style="animation-delay:.15s">פתחי את המסע ←</a>
-      </div>
-    </div>
-
-  </div>
-</main>
-
 <script>
 (function () {
   'use strict';
@@ -874,7 +892,7 @@ a { color: inherit; text-decoration: none; }
       far: 'שמרתי לך ערב. הוא נבנה בשבילך כבר הרבה זמן, פרט אחרי פרט.\nלא אגלה כלום. רק את זה: כשתביני איפה את — כבר יהיה מאוחר מדי לחזור.',
       near: 'אל תנסי לנחש מה מחכה שם.\nתנסי רק לדמיין איך זה ירגיש —\nחם. איטי. ומישהו שחשב על כל פרט, בשבילך בלבד.',
       dayBefore: 'מחר בלילה.\nהכול כבר מוכן ומחכה. כל פרט במקומו.\nמחר בשעה הזאת כבר לא תוכלי לחשוב על שום דבר אחר.\nתישני טוב — זו הפעם האחרונה שאת נרדמת בלי לדעת.',
-      today: 'הערב.\nנשאר רק דבר אחד שחסר שם — את.\nאבל לא כל כך מהר... קודם הכנתי לך הקדמה.',
+      today: 'הערב.\nנשאר רק דבר אחד שחסר שם — את.',
     },
   };
   const CANDIDATE_DATES = ['2026-08-03', '2026-08-04', '2026-08-05'];
@@ -885,7 +903,6 @@ a { color: inherit; text-decoration: none; }
   const CHOSEN_TS_KEY = 'invite-chosen-ts';
   const ACK_KEY = 'invite-ack';
   const PARTNER_VERIFIED_KEY = 'invite-partner-verified';
-  const PRELUDE_KEY = 'invite-prelude-step';
   const PENDING_KEY = 'invite-sync-pending';
 
   // ponytail: localStorage can throw (Safari private mode, quota) — wrapper falls back to in-memory
@@ -907,7 +924,6 @@ a { color: inherit; text-decoration: none; }
     store.remove(CHOSEN_TS_KEY);
     store.remove(ACK_KEY);
     store.remove(PARTNER_VERIFIED_KEY);
-    store.remove(PRELUDE_KEY);
     store.remove(PENDING_KEY);
     params.delete('reset');
     const cleanQuery = params.toString();
@@ -1218,11 +1234,10 @@ a { color: inherit; text-decoration: none; }
   const confirmCard = document.getElementById('confirmCard');
   const confirmDateLine = document.getElementById('confirmDateLine');
   const confirmQuestion = document.getElementById('confirmQuestion');
-  const confirmCelebrate = document.getElementById('confirmCelebrate');
   const confirmYesBtn = document.getElementById('confirmYesBtn');
   const confirmNoBtn = document.getElementById('confirmNoBtn');
   const confirmCloseBtn = document.getElementById('confirmCloseBtn');
-  const confirmDoneBtn = document.getElementById('confirmDoneBtn');
+  const villaView = document.getElementById('villa-view');
 
   let pendingDate = null;
   let confirmLastFocused = null;
@@ -1233,7 +1248,6 @@ a { color: inherit; text-decoration: none; }
     pendingDate = dateStr;
     confirmDateLine.textContent = formatChosenLine(dateStr);
     confirmQuestion.classList.remove('view-hidden');
-    confirmCelebrate.classList.add('view-hidden');
     confirmOverlay.classList.remove('view-hidden');
     confirmCard.focus();
     document.addEventListener('keydown', onConfirmKeydown);
@@ -1249,22 +1263,35 @@ a { color: inherit; text-decoration: none; }
   confirmCloseBtn.addEventListener('click', closeConfirm);
   confirmOverlay.addEventListener('click', function (e) { if (e.target === confirmOverlay) closeConfirm(); });
 
+  function openVillaReveal() {
+    confirmOverlay.classList.add('view-hidden');
+    document.removeEventListener('keydown', onConfirmKeydown);
+    envelopeView.classList.add('view-hidden');
+    calendarView.classList.add('view-hidden');
+    villaView.classList.remove('view-hidden');
+    spawnCelebrationBurst();
+    villaView.removeAttribute('data-lit');
+    // ponytail: double rAF so the browser paints the darkened frame before transitioning
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { villaView.setAttribute('data-lit', '1'); });
+    });
+  }
+  function closeVillaReveal() {
+    villaView.classList.add('view-hidden');
+    calendarView.classList.remove('view-hidden');
+    renderCalendar();
+  }
+
   confirmYesBtn.addEventListener('click', function () {
     store.set(CHOSEN_KEY, pendingDate);
     store.set(CHOSEN_TS_KEY, String(Date.now()));
     SyncBus.publish('CHOSE', pendingDate);
-    confirmQuestion.classList.add('view-hidden');
-    confirmCelebrate.classList.remove('view-hidden');
-    spawnCelebrationBurst();
-    renderCalendar(); // item 04: reflect the lock immediately, no second date pickable
+    openVillaReveal();
   });
-  confirmDoneBtn.addEventListener('click', function () {
-    closeConfirm();
-    renderCalendar();
+  document.getElementById('villaCalBtn').addEventListener('click', function () {
+    if (pendingDate) downloadICS(pendingDate);
   });
-  document.getElementById('confirmCalBtn').addEventListener('click', function () {
-    downloadICS(pendingDate);
-  });
+  document.getElementById('villaCloseBtn').addEventListener('click', closeVillaReveal);
 
   /* ---------- מודאל רמז ---------- */
   const overlay = document.getElementById('hint-overlay');
@@ -1288,22 +1315,15 @@ a { color: inherit; text-decoration: none; }
   hintImage.addEventListener('load', function () { hintImage.classList.add('is-loaded'); });
   hintImage.addEventListener('error', function () { hintImageWrap.classList.add('view-hidden'); }); // item 12
 
-  const HINT_IMAGES = {
-    far: 'hint-images/hint-far.jpg',
-    near: 'hint-images/hint-near.jpg',
-    dayBefore: 'hint-images/hint-daybefore.jpg',
-    today: 'hint-images/hint-today.jpg',
-  };
-  function updateHintImage(stage, locked) {
+  const HINT_IMAGE = 'hint-images/villa.png';
+  function updateHintImage(stage) {
     if (stage === 'past') { hintImageWrap.classList.add('view-hidden'); return; }
     hintImageWrap.classList.remove('view-hidden');
-    const src = HINT_IMAGES[stage];
-    if (hintImage.dataset.src !== src) {
-      hintImage.dataset.src = src;
+    if (hintImage.dataset.src !== HINT_IMAGE) {
+      hintImage.dataset.src = HINT_IMAGE;
       hintImage.classList.remove('is-loaded');
-      hintImage.src = src;
+      hintImage.src = HINT_IMAGE;
     }
-    hintImage.classList.toggle('is-locked', locked);
   }
 
   const STAGE_LABELS = { far: 'עוד זמן', near: 'מתקרב', dayBefore: 'מחר', today: 'היום!', past: 'היה' };
@@ -1348,7 +1368,7 @@ a { color: inherit; text-decoration: none; }
     activeStage = stage;
     const locked = stage !== 'past' && !previewStage && !isAcked(); // item 07: skip isAcked() (has a write path) during preview
     hintWasLocked = locked;
-    updateHintImage(stage, locked);
+    updateHintImage(stage);
 
     hintStageTag.textContent = locked ? MYSTERY_TAG : STAGE_LABELS[stage];
     hintText.textContent = locked
@@ -1383,70 +1403,11 @@ a { color: inherit; text-decoration: none; }
     spawnCelebrationBurst();
   }
 
-  /* ---------- טקס הקדמה (יום עצמו) ---------- */
-  const isPreviewToday = previewStage === 'today'; // פריוויו לא שומר התקדמות
-  let previewPreludeStep = 1;
-  const preludeView = document.getElementById('prelude-view');
-  const preludeSteps = {
-    1: document.getElementById('preludeWine'),
-    2: document.getElementById('preludeToast'),
-    3: document.getElementById('preludeDress'),
-    4: document.getElementById('preludeFinal'),
-  };
-
-  function getPreludeStep() {
-    if (isPreviewToday) return previewPreludeStep;
-    const v = store.get(PRELUDE_KEY);
-    return v === 'done' ? 4 : (Number(v) || 1);
-  }
-  function setPreludeStep(step) {
-    if (isPreviewToday) { previewPreludeStep = step; return; }
-    store.set(PRELUDE_KEY, step === 4 ? 'done' : String(step));
-  }
-  function isPreludeDone() {
-    return isPreviewToday ? previewPreludeStep === 4 : store.get(PRELUDE_KEY) === 'done';
-  }
-
-  function showPreludeStep(step) {
-    Object.keys(preludeSteps).forEach(function (k) {
-      preludeSteps[k].classList.toggle('view-hidden', Number(k) !== step);
-    });
-    const card = preludeSteps[step].querySelector('.screen-fade');
-    card.classList.remove('screen-fade');
-    void card.offsetWidth;
-    card.classList.add('screen-fade');
-  }
-
-  function openPrelude() {
-    closeHint();
-    calendarView.classList.add('view-hidden');
-    document.getElementById('preludeFinalLink').href = STORY.link;
-    const step = getPreludeStep();
-    showPreludeStep(step);
-    preludeView.classList.remove('view-hidden');
-  }
-
-  document.getElementById('preludeWineBtn').addEventListener('click', function () {
-    setPreludeStep(2); showPreludeStep(2);
-  });
-  document.getElementById('preludeToastBtn').addEventListener('click', function () {
-    setPreludeStep(3); showPreludeStep(3);
-  });
-  document.getElementById('preludeDressBtn').addEventListener('click', function () {
-    setPreludeStep(4); showPreludeStep(4);
-  });
-
   function updateTodayCTA() {
     hintActionBtn.classList.remove('view-hidden');
-    if (isPreludeDone()) {
-      hintActionBtn.textContent = 'פתחי את המסע ←';
-      hintActionBtn.href = STORY.link;
-      hintActionBtn.onclick = null;
-    } else {
-      hintActionBtn.textContent = 'אני מוכנה... קחי אותי להקדמה ←';
-      hintActionBtn.removeAttribute('href');
-      hintActionBtn.onclick = function (e) { e.preventDefault(); openPrelude(); };
-    }
+    hintActionBtn.textContent = 'פתחי את המסע ←';
+    hintActionBtn.href = STORY.link;
+    hintActionBtn.onclick = null;
   }
 
   function openHint(dateStr) {
