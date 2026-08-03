@@ -1050,29 +1050,17 @@ a { color: inherit; text-decoration: none; }
     return HEBREW_WEEKDAYS_FULL[d.getDay()] + ', ' + d.getDate() + ' ב' + HEBREW_MONTHS[d.getMonth()];
   }
   function pad2(n) { return String(n).padStart(2, '0'); }
-  // ICS client-only: מ-STORY.time עד 23:00 באותו יום, בלי מיקום, בלי לחשוף תוכן (item 05, 10)
+  // פתיחת Google Calendar עם האירוע מוכן — בלי הורדת קובץ (מ-STORY.time עד 23:00, בלי לחשוף תוכן)
   function downloadICS(dateStr) {
     const d = dateStr.replace(/-/g, '');
     const timeParts = STORY.time.split(':');
     const startH = pad2(timeParts[0]) + pad2(timeParts[1]) + '00';
-    const dtstamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    const uid = 'invite-' + d + '@raniv123.github.io';
-    const ics = [
-      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//invite//he', 'BEGIN:VEVENT',
-      'UID:' + uid,
-      'DTSTAMP:' + dtstamp,
-      'DTSTART;TZID=Asia/Jerusalem:' + d + 'T' + startH,
-      'DTEND;TZID=Asia/Jerusalem:' + d + 'T230000',
-      'SUMMARY:ערב שלנו 🤍',
-      'DESCRIPTION:...',
-      'END:VEVENT', 'END:VCALENDAR',
-    ].join('\r\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
-    a.download = 'הערב-שלנו.ics';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 0);
+    const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+      + '&text=' + encodeURIComponent('ערב שלנו 🤍')
+      + '&dates=' + d + 'T' + startH + '/' + d + 'T230000'
+      + '&ctz=Asia/Jerusalem'
+      + '&details=' + encodeURIComponent('...');
+    window.open(url, '_blank', 'noopener');
   }
 
   function isAcked() {
