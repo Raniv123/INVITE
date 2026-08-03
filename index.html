@@ -944,8 +944,9 @@ a { color: inherit; text-decoration: none; }
     }
     function validate(msg) {
       if (!msg || typeof msg !== 'object') return null;
-      if (msg.type !== 'CHOSE' && msg.type !== 'ACK') return null;
+      if (msg.type !== 'CHOSE' && msg.type !== 'ACK' && msg.type !== 'STATE') return null;
       if (!isValidDate(msg.date)) return null;
+      if (msg.type === 'STATE' && msg.acked !== 0 && msg.acked !== 1) return null;
       return msg;
     }
 
@@ -1020,13 +1021,42 @@ a { color: inherit; text-decoration: none; }
     });
     window.addEventListener('online', flushPending);
 
+    // one-shot fetch+parse for load-time restore (item 02). Deliberately does NOT touch
+    // seenIds: that set belongs to the continuous poll() loop only. Sharing it caused a real bug —
+    // the unconditional ACK-listener subscribe (registered before any #partner code) fires poll()
+    // first, which silently marks the same message ids "seen" before this one-shot fetch runs,
+    // making restoreFromNetwork see an empty array even though the messages are right there.
+    function fetchOnce() {
+      return fetch(NTFY_BASE + '/json?poll=1&since=all')
+        .then(function (r) { return r.text(); })
+        .then(function (text) {
+          const valid = [];
+          text.split('\n').forEach(function (line) {
+            line = line.trim();
+            if (!line) return;
+            let outer;
+            try { outer = JSON.parse(line); } catch (e) { return; }
+            if (!outer || !outer.message) return;
+            let inner;
+            try { inner = JSON.parse(outer.message); } catch (e) { return; }
+            const msg = validate(inner);
+            if (!msg) return;
+            valid.push(msg);
+          });
+          valid.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+          return valid;
+        })
+        .catch(function () { return []; });
+    }
+
     return {
       subscribe: function (fn) {
         listeners.push(fn);
         if (document.visibilityState === 'visible') start();
       },
-      publish: function (type, date) {
-        const msg = { type: type, date: date, ts: Date.now() };
+      fetchLatest: fetchOnce,
+      publish: function (type, date, extra) {
+        const msg = Object.assign({ type: type, date: date, ts: Date.now() }, extra || {});
         sendMessage(msg).then(function (ok) {
           if (!ok) {
             const pending = loadPending();
@@ -1071,6 +1101,30 @@ a { color: inherit; text-decoration: none; }
       return true;
     }
     return false;
+  }
+
+  // פעימת מצב: מתפרסמת בכל טעינה + אחרי CHOSE/ACK, כדי לחדש את חלון ה-12 שעות של ntfy
+  function publishCurrentState() {
+    if (previewStage) return;
+    const chosen = getChosenDate();
+    if (!chosen) return;
+    SyncBus.publish('STATE', chosen, { acked: isAcked() ? 1 : 0 });
+  }
+
+  // שחזור שקט: רק כשאין בחירה מקומית ולא preview. לוקח את אירוע ה-CHOSE/STATE העדכני ביותר;
+  // "acked" נשאר דביק (monotonic) — אם נראה אי-פעם סימן-ack, זה תקף לתמיד.
+  function restoreFromNetwork() {
+    if (previewStage || getChosenDate()) return Promise.resolve(false);
+    return SyncBus.fetchLatest().then(function (msgs) {
+      const dated = msgs.filter(function (m) { return m.type === 'CHOSE' || m.type === 'STATE'; });
+      if (!dated.length) return false;
+      const latest = dated[dated.length - 1]; // fetchLatest already sorts ascending by ts
+      store.set(CHOSEN_KEY, latest.date);
+      store.set(CHOSEN_TS_KEY, String(latest.ts || Date.now()));
+      const acked = msgs.some(function (m) { return m.type === 'ACK' || (m.type === 'STATE' && m.acked === 1); });
+      if (acked) store.set(ACK_KEY, '1');
+      return true;
+    });
   }
 
   /* ---------- פרטיקלים ---------- */
@@ -1217,6 +1271,20 @@ a { color: inherit; text-decoration: none; }
 
   renderCalendar();
 
+  // שחזור שקט בטעינה (רק בדף הראשי, לא בדף #partner — שם יש זרימת שחזור משלו).
+  // הלוח כבר מוצג עכשיו במצב ברירת-מחדל (סינכרוני, לא חסום); ה-fetch מעדכן אותו כשהוא מגיע, מהר או לא.
+  if (location.hash.replace('#', '') !== 'partner') {
+    restoreFromNetwork().then(function (found) {
+      if (found) {
+        const anchor = new Date(getChosenDate() + 'T00:00:00');
+        viewYear = anchor.getFullYear();
+        viewMonth = anchor.getMonth();
+        renderCalendar();
+      }
+      publishCurrentState();
+    });
+  }
+
   /* ---------- מודאל אישור בחירה ---------- */
   const confirmOverlay = document.getElementById('confirm-overlay');
   const confirmCard = document.getElementById('confirmCard');
@@ -1274,6 +1342,7 @@ a { color: inherit; text-decoration: none; }
     store.set(CHOSEN_KEY, pendingDate);
     store.set(CHOSEN_TS_KEY, String(Date.now()));
     SyncBus.publish('CHOSE', pendingDate);
+    publishCurrentState();
     openVillaReveal();
   });
   document.getElementById('villaCalBtn').addEventListener('click', function () {
@@ -1329,7 +1398,8 @@ a { color: inherit; text-decoration: none; }
   // כדי לתפוס גם בחירה שנעשתה מאוחר יותר באותו סשן. preview לא נרשם כלל (item 07).
   if (!previewStage) {
     SyncBus.subscribe(function (msg) {
-      if (msg.type !== 'ACK') return;
+      const isAckSignal = msg.type === 'ACK' || (msg.type === 'STATE' && msg.acked === 1);
+      if (!isAckSignal) return;
       const currentChosen = getChosenDate();
       if (!currentChosen || msg.date !== currentChosen || isAcked()) return;
       store.set(ACK_KEY, '1');
@@ -1501,8 +1571,8 @@ a { color: inherit; text-decoration: none; }
       });
     }
 
-    function startPartnerFlow() {
-      // כבר קיבל תשובה בעבר? מציגים ישירות
+    // מציג את המסך הנכון מתוך המצב הידוע כרגע (localStorage) — קריא שוב בכל פעם שמצב חדש מגיע
+    function applyPartnerState() {
       const storedChose = getChosenDate();
       if (store.get(ACK_KEY) === '1' && storedChose) {
         foundDate = storedChose;
@@ -1514,18 +1584,36 @@ a { color: inherit; text-decoration: none; }
         foundDate = storedChose;
         partnerDateLine.textContent = formatChosenLine(foundDate);
         showPartnerPhase(partnerFoundScreen);
-      } else {
-        showPartnerPhase(partnerWaitingScreen);
+        return;
       }
+      showPartnerPhase(partnerWaitingScreen);
+    }
 
-      // item 02: SyncBus already delivers CHOSE messages in chronological order —
+    let partnerListenerAttached = false;
+    function startPartnerFlow() {
+      applyPartnerState(); // מציג מיד לפי המצב הידוע, בלי לחכות לרשת
+
+      if (partnerListenerAttached) return;
+      partnerListenerAttached = true;
+      // item 02: SyncBus already delivers CHOSE/STATE messages in chronological order —
       // always take the latest one instead of locking onto the first
       SyncBus.subscribe(function (msg) {
-        if (msg.type !== 'CHOSE') return;
+        if (msg.type !== 'CHOSE' && msg.type !== 'STATE') return;
         if (store.get(ACK_KEY) === '1') return; // already acked, don't reopen the question
-        foundDate = msg.date;
-        partnerDateLine.textContent = formatChosenLine(foundDate);
-        showPartnerPhase(partnerFoundScreen);
+        store.set(CHOSEN_KEY, msg.date);
+        store.set(CHOSEN_TS_KEY, String(msg.ts || Date.now()));
+        if (msg.type === 'STATE' && msg.acked === 1) store.set(ACK_KEY, '1');
+        applyPartnerState();
+      });
+    }
+
+    // מציג מיד לפי המצב המקומי, ובמקביל שולף מהרשת (STATE/CHOSE/ACK) בלי לחסום —
+    // אם הגיע משהו חדש, ה-then מרענן את המסך, מהר או לא (item 02)
+    function beginPartnerFlow() {
+      startPartnerFlow();
+      restoreFromNetwork().then(function (found) {
+        if (found) applyPartnerState();
+        publishCurrentState();
       });
     }
 
@@ -1533,7 +1621,7 @@ a { color: inherit; text-decoration: none; }
       const val = (pinInput.value || '').trim();
       if (val === PARTNER_CODE) {
         store.set(PARTNER_VERIFIED_KEY, '1');
-        startPartnerFlow();
+        beginPartnerFlow();
       } else {
         pinInput.value = '';
         pinInput.focus();
@@ -1551,6 +1639,7 @@ a { color: inherit; text-decoration: none; }
       if (!foundDate) return;
       SyncBus.publish('ACK', foundDate);
       store.set(ACK_KEY, '1');
+      publishCurrentState();
       partnerAckedDateLine.textContent = formatChosenLine(foundDate);
       showPartnerPhase(partnerAckedScreen);
     });
@@ -1559,7 +1648,7 @@ a { color: inherit; text-decoration: none; }
     });
 
     if (store.get(PARTNER_VERIFIED_KEY) === '1') {
-      startPartnerFlow();
+      beginPartnerFlow();
     } else {
       showPartnerPhase(partnerPinScreen);
       pinInput.focus();
