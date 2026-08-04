@@ -1523,10 +1523,11 @@ a { color: inherit; text-decoration: none; }
     spawnCelebrationBurst();
   }
 
+  // הכפתור למסע מושבת (רן, 2026-08-03): הרמזים והכניסה לערב עוברים דרך קישור נפרד.
+  // ההזמנה נשארת כרטיס יפה — תמונה, תאריך, ספירה — בלי שום דרך להגיע לסיפור.
   function updateTodayCTA() {
-    hintActionBtn.classList.remove('view-hidden');
-    hintActionBtn.textContent = 'פתחי את המסע ←';
-    hintActionBtn.href = STORY.link;
+    hintActionBtn.classList.add('view-hidden');
+    hintActionBtn.removeAttribute('href');
     hintActionBtn.onclick = null;
   }
 
